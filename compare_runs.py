@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+import re
 
 
 NUMERIC_FIELDS = {
@@ -95,6 +96,91 @@ def index_rows(rows: List[Row]) -> Dict[str, Row]:
         key = "__Aggregated__" if r.name == "Aggregated" else r.name
         idx[key] = r
     return idx
+
+
+def _extract_template_args(html_text: str) -> Optional[dict]:
+    """Extract JSON assigned to window.templateArgs in a Locust HTML file.
+
+    Uses a brace-matching approach to safely capture the JSON object.
+    Returns a parsed dict or None if not found/invalid.
+    """
+    # Prefer the explicit assignment form
+    m = re.search(r"window\.templateArgs\s*=\s*\{", html_text)
+    if not m:
+        return None
+    brace_start = m.start() + m.group(0).rfind("{")
+    if brace_start == -1:
+        return None
+    # Match braces to find the end of the JSON object
+    depth = 0
+    i = brace_start
+    while i < len(html_text):
+        ch = html_text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(html_text[brace_start : i + 1])
+                except Exception:
+                    return None
+        i += 1
+    return None
+
+
+def load_html_feature_rows(dir_path: Path) -> Dict[str, Row]:
+    """Parse per-feature Locust HTML pages for summary metrics.
+
+    Returns a mapping from feature name (file stem) to Row containing fields:
+    - Requests/s (from latest history.current_rps)
+    - Average Response Time (from latest history.total_avg_response_time)
+    - 50% (from latest history.response_time_percentile_0.5)
+    - 95% (from latest history.response_time_percentile_0.95)
+    """
+    rows: Dict[str, Row] = {}
+    if not dir_path.is_dir():
+        return rows
+    for html_path in dir_path.glob("*.html"):
+        # Skip wrapper/aux pages that aren't feature dashboards
+        if html_path.name in {"htmlpublisher-wrapper.html"}:
+            continue
+        try:
+            text = html_path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        tmpl = _extract_template_args(text)
+        if not tmpl:
+            continue
+        history = tmpl.get("history") or []
+        if not history:
+            continue
+        # Choose last sample with non-null metrics
+        last = None
+        for item in reversed(history):
+            if (
+                isinstance(item, dict)
+                and item.get("current_rps") is not None
+                and item.get("total_avg_response_time") is not None
+            ):
+                last = item
+                break
+        if not last:
+            continue
+        data: Dict[str, float] = {}
+        def set_if_float(key_out: str, key_in: str):
+            v = last.get(key_in)
+            if isinstance(v, (int, float)):
+                data[key_out] = float(v)
+
+        set_if_float("Requests/s", "current_rps")
+        set_if_float("Average Response Time", "total_avg_response_time")
+        set_if_float("50%", "response_time_percentile_0.5")
+        set_if_float("95%", "response_time_percentile_0.95")
+
+        feature_name = html_path.stem
+        rows[feature_name] = Row(name=feature_name, type="HTML", data=data)
+    return rows
 
 
 def pct_change(base: Optional[float], curr: Optional[float]) -> Optional[float]:
@@ -193,6 +279,10 @@ def compare_reports(base_path: Path, curr_path: Path, as_json: bool = False) -> 
         "95%",
     ]
 
+    # Also parse per-feature HTML pages if directories are given
+    base_html_rows = load_html_feature_rows(base_path if base_path.is_dir() else base_path.parent)
+    curr_html_rows = load_html_feature_rows(curr_path if curr_path.is_dir() else curr_path.parent)
+
     if as_json:
         # Produce a structured JSON dict
         out: Dict[str, Dict[str, Dict[str, Optional[float]]]] = {}
@@ -216,6 +306,27 @@ def compare_reports(base_path: Path, curr_path: Path, as_json: bool = False) -> 
                     "pct_change": pct_change(bb, cc),
                 }
             out[key] = entry
+        # Add HTML features
+        html_keys = sorted(set(base_html_rows.keys()) | set(curr_html_rows.keys()))
+        for key in html_keys:
+            b = base_html_rows.get(key)
+            c = curr_html_rows.get(key)
+            fields = set(important_fields)
+            if b:
+                fields.update(b.data.keys())
+            if c:
+                fields.update(c.data.keys())
+            entry: Dict[str, Dict[str, Optional[float]]] = {}
+            for f in sorted(fields):
+                bb = b.data.get(f) if b else None
+                cc = c.data.get(f) if c else None
+                entry[f] = {
+                    "base": bb,
+                    "current": cc,
+                    "diff": diff(bb, cc),
+                    "pct_change": pct_change(bb, cc),
+                }
+            out[f"HTML:{key}"] = entry
         print(json.dumps(out, indent=2))
         return 0
 
@@ -228,6 +339,14 @@ def compare_reports(base_path: Path, curr_path: Path, as_json: bool = False) -> 
         title = f"Endpoint: {ek}"
         print_section(title)
         render_comparison(base_idx.get(ek), curr_idx.get(ek), important_fields)
+
+    # Render HTML features
+    feature_keys = sorted(set(base_html_rows.keys()) | set(curr_html_rows.keys()))
+    if feature_keys:
+        print_section("HTML Features")
+        for fk in feature_keys:
+            print_section(f"Feature: {fk}")
+            render_comparison(base_html_rows.get(fk), curr_html_rows.get(fk), important_fields)
 
     return 0
 
@@ -253,4 +372,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
