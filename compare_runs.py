@@ -213,8 +213,45 @@ def print_section(title: str):
     print("-" * len(title))
 
 
+def _metric_direction(metric: str) -> str:
+    """Return 'higher', 'lower', or 'neutral' for a metric's desirable direction.
+
+    - 'Requests/s' -> higher is better
+    - Failures and response times / percentiles -> lower is better
+    - others -> neutral
+    """
+    m = metric.lower()
+    if metric == "Requests/s":
+        return "higher"
+    if metric in {"Failure Count", "Failures/s"}:
+        return "lower"
+    if "response time" in m:
+        return "lower"
+    if metric.endswith("%"):
+        return "lower"
+    return "neutral"
+
+
+def _verdict_for(metric: str, b: Optional[float], c: Optional[float]) -> Optional[str]:
+    if b is None or c is None:
+        return None
+    if b == c:
+        return "same"
+    direction = _metric_direction(metric)
+    if direction == "higher":
+        return "better" if c > b else "worse"
+    if direction == "lower":
+        return "better" if c < b else "worse"
+    return None
+
+
 def render_comparison(
-    base_row: Optional[Row], curr_row: Optional[Row], important_fields: List[str]
+    base_row: Optional[Row],
+    curr_row: Optional[Row],
+    important_fields: List[str],
+    *,
+    colorize: bool = False,
+    show_verdict: bool = True,
 ):
     headers = [
         "Metric",
@@ -223,6 +260,8 @@ def render_comparison(
         "Diff",
         "% Change",
     ]
+    if show_verdict:
+        headers.append("Verdict")
     rows: List[List[str]] = []
 
     base_data = base_row.data if base_row else {}
@@ -239,13 +278,17 @@ def render_comparison(
         d = diff(b, c)
         p = pct_change(b, c)
         p_str = "-" if p is None else f"{p:+.1f}%"
-        rows.append([
+        row = [
             field,
             format_number(b),
             format_number(c),
             ("-" if d is None else (f"{d:+.3f}" if abs(d - round(d)) > 1e-9 else f"{int(d):+d}")),
             p_str,
-        ])
+        ]
+        if show_verdict:
+            v = _verdict_for(field, b, c)
+            row.append("-" if v is None else v)
+        rows.append(row)
 
     # Determine column widths
     widths = [max(len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
@@ -256,10 +299,25 @@ def render_comparison(
     print(header_line)
     print(sep_line)
     for r in rows:
-        print("  ".join(r[i].ljust(widths[i]) for i in range(len(headers))))
+        line = "  ".join(r[i].ljust(widths[i]) for i in range(len(headers)))
+        if colorize:
+            # color whole row based on verdict
+            v = r[-1] if show_verdict else None
+            if v == "better":
+                line = "\033[32m" + line + "\033[0m"  # green
+            elif v == "worse":
+                line = "\033[31m" + line + "\033[0m"  # red
+        print(line)
 
 
-def compare_reports(base_path: Path, curr_path: Path, as_json: bool = False) -> int:
+def compare_reports(
+    base_path: Path,
+    curr_path: Path,
+    as_json: bool = False,
+    *,
+    colorize: bool = False,
+    show_verdict: bool = True,
+) -> int:
     base_rows = load_report(base_path)
     curr_rows = load_report(curr_path)
 
@@ -332,13 +390,25 @@ def compare_reports(base_path: Path, curr_path: Path, as_json: bool = False) -> 
 
     # Human readable output
     print_section("Aggregated")
-    render_comparison(base_idx.get("__Aggregated__"), curr_idx.get("__Aggregated__"), important_fields)
+    render_comparison(
+        base_idx.get("__Aggregated__"),
+        curr_idx.get("__Aggregated__"),
+        important_fields,
+        colorize=colorize,
+        show_verdict=show_verdict,
+    )
 
     endpoint_keys = [k for k in all_keys if k != "__Aggregated__"]
     for ek in endpoint_keys:
         title = f"Endpoint: {ek}"
         print_section(title)
-        render_comparison(base_idx.get(ek), curr_idx.get(ek), important_fields)
+        render_comparison(
+            base_idx.get(ek),
+            curr_idx.get(ek),
+            important_fields,
+            colorize=colorize,
+            show_verdict=show_verdict,
+        )
 
     # Render HTML features
     feature_keys = sorted(set(base_html_rows.keys()) | set(curr_html_rows.keys()))
@@ -346,7 +416,13 @@ def compare_reports(base_path: Path, curr_path: Path, as_json: bool = False) -> 
         print_section("HTML Features")
         for fk in feature_keys:
             print_section(f"Feature: {fk}")
-            render_comparison(base_html_rows.get(fk), curr_html_rows.get(fk), important_fields)
+            render_comparison(
+                base_html_rows.get(fk),
+                curr_html_rows.get(fk),
+                important_fields,
+                colorize=colorize,
+                show_verdict=show_verdict,
+            )
 
     return 0
 
@@ -361,10 +437,27 @@ def main():
     parser.add_argument("base", type=Path, help="Base run directory or report.csv path")
     parser.add_argument("current", type=Path, help="Current run directory or report.csv path")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
+    parser.add_argument(
+        "--color",
+        action="store_true",
+        help="Colorize rows: green if better, red if worse",
+    )
+    parser.add_argument(
+        "--no-verdict",
+        dest="show_verdict",
+        action="store_false",
+        help="Hide the 'Verdict' column",
+    )
 
     args = parser.parse_args()
     try:
-        return compare_reports(args.base, args.current, as_json=args.json)
+        return compare_reports(
+            args.base,
+            args.current,
+            as_json=args.json,
+            colorize=args.color,
+            show_verdict=args.show_verdict,
+        )
     except Exception as e:
         print(f"Error: {e}")
         return 1
