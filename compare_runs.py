@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import re
 import html as htmllib
+from datetime import datetime
 
 
 NUMERIC_FIELDS = {
@@ -150,6 +151,28 @@ def load_html_feature_map(dir_path: Path) -> Dict[str, Dict[str, Row]]:
         if not tmpl:
             continue
         rs = tmpl.get("requests_statistics") or []
+        # Compute test duration from start_time/end_time if available
+        def _parse_iso(ts: Optional[str]) -> Optional[datetime]:
+            if not ts or not isinstance(ts, str):
+                return None
+            t = ts.strip()
+            if t.endswith("Z"):
+                t = t[:-1] + "+00:00"
+            try:
+                return datetime.fromisoformat(t)
+            except Exception:
+                return None
+
+        start_dt = _parse_iso(tmpl.get("start_time"))
+        end_dt = _parse_iso(tmpl.get("end_time"))
+        duration_seconds: Optional[float] = None
+        if start_dt and end_dt:
+            try:
+                duration_seconds = (end_dt - start_dt).total_seconds()
+                if duration_seconds <= 0:
+                    duration_seconds = None
+            except Exception:
+                duration_seconds = None
         if not isinstance(rs, list) or not rs:
             continue
         fmap: Dict[str, Row] = {}
@@ -163,7 +186,13 @@ def load_html_feature_map(dir_path: Path) -> Dict[str, Dict[str, Row]]:
             def s(key_out: str, val):
                 if isinstance(val, (int, float)):
                     data[key_out] = float(val)
-            s("Requests/s", item.get("current_rps"))
+            # Compute average RPS over the whole run when possible
+            num_req = item.get("num_requests")
+            if isinstance(num_req, (int, float)) and duration_seconds and duration_seconds > 0:
+                data["Requests/s"] = float(num_req) / float(duration_seconds)
+            else:
+                # Fallback to instantaneous value if duration unavailable
+                s("Requests/s", item.get("current_rps"))
             s("Request Count", item.get("num_requests"))
             s("Failure Count", item.get("num_failures"))
             s("Average Response Time", item.get("avg_response_time"))
