@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple
 import re
 import html as htmllib
 from datetime import datetime
+from urllib.parse import parse_qsl
 
 
 NUMERIC_FIELDS = {
@@ -173,6 +174,46 @@ def load_html_feature_map(dir_path: Path) -> Dict[str, Dict[str, Row]]:
                     duration_seconds = None
             except Exception:
                 duration_seconds = None
+
+        # Determine the 'During' date used for label normalization.
+        # Prefer end date; fallback to start date if end is missing.
+        during_date = (end_dt or start_dt).date() if (end_dt or start_dt) else None
+
+        def normalize_endpoint_name(name: str) -> str:
+            if not during_date:
+                return name
+            if name == "Aggregated":
+                return name
+            # Split path and query
+            if "?" not in name:
+                return name
+            path, qs = name.split("?", 1)
+            parts = qs.split("&") if qs else []
+            new_parts = []
+            for part in parts:
+                if not part:
+                    continue
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                else:
+                    k, v = part, ""
+                key = k.strip()
+                val = v.strip()
+                if key in {"start_date", "end_date"} and re.match(r"^\d{4}-\d{2}-\d{2}$", val):
+                    try:
+                        y, m, d = map(int, val.split("-"))
+                        dt = datetime(y, m, d).date()
+                        delta = (dt - during_date).days
+                        if delta == 0:
+                            rel = "During"
+                        else:
+                            sign = "+" if delta > 0 else ""
+                            rel = f"During{sign}{delta}d"
+                        val = rel
+                    except Exception:
+                        pass
+                new_parts.append(f"{key}={val}" if val != "" else key)
+            return path + ("?" + "&".join(new_parts) if new_parts else "")
         if not isinstance(rs, list) or not rs:
             continue
         fmap: Dict[str, Row] = {}
@@ -180,6 +221,7 @@ def load_html_feature_map(dir_path: Path) -> Dict[str, Dict[str, Row]]:
             if not isinstance(item, dict):
                 continue
             name = htmllib.unescape(str(item.get("name", "")).strip())
+            name = normalize_endpoint_name(name)
             if not name:
                 continue
             data: Dict[str, float] = {}
