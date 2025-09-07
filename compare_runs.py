@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import re
+import html as htmllib
 
 
 NUMERIC_FIELDS = {
@@ -129,20 +130,16 @@ def _extract_template_args(html_text: str) -> Optional[dict]:
     return None
 
 
-def load_html_feature_rows(dir_path: Path) -> Dict[str, Row]:
-    """Parse per-feature Locust HTML pages for summary metrics.
+def load_html_feature_map(dir_path: Path) -> Dict[str, Dict[str, Row]]:
+    """Parse per-feature Locust HTML pages for per-endpoint metrics.
 
-    Returns a mapping from feature name (file stem) to Row containing fields:
-    - Requests/s (from latest history.current_rps)
-    - Average Response Time (from latest history.total_avg_response_time)
-    - 50% (from latest history.response_time_percentile_0.5)
-    - 95% (from latest history.response_time_percentile_0.95)
+    Returns a nested mapping: { feature_name: { endpoint_name: Row(...) } }
+    The special endpoint name 'Aggregated' is included if present.
     """
-    rows: Dict[str, Row] = {}
+    features: Dict[str, Dict[str, Row]] = {}
     if not dir_path.is_dir():
-        return rows
+        return features
     for html_path in dir_path.glob("*.html"):
-        # Skip wrapper/aux pages that aren't feature dashboards
         if html_path.name in {"htmlpublisher-wrapper.html"}:
             continue
         try:
@@ -152,35 +149,37 @@ def load_html_feature_rows(dir_path: Path) -> Dict[str, Row]:
         tmpl = _extract_template_args(text)
         if not tmpl:
             continue
-        history = tmpl.get("history") or []
-        if not history:
+        rs = tmpl.get("requests_statistics") or []
+        if not isinstance(rs, list) or not rs:
             continue
-        # Choose last sample with non-null metrics
-        last = None
-        for item in reversed(history):
-            if (
-                isinstance(item, dict)
-                and item.get("current_rps") is not None
-                and item.get("total_avg_response_time") is not None
-            ):
-                last = item
-                break
-        if not last:
-            continue
-        data: Dict[str, float] = {}
-        def set_if_float(key_out: str, key_in: str):
-            v = last.get(key_in)
-            if isinstance(v, (int, float)):
-                data[key_out] = float(v)
+        fmap: Dict[str, Row] = {}
+        for item in rs:
+            if not isinstance(item, dict):
+                continue
+            name = htmllib.unescape(str(item.get("name", "")).strip())
+            if not name:
+                continue
+            data: Dict[str, float] = {}
+            def s(key_out: str, val):
+                if isinstance(val, (int, float)):
+                    data[key_out] = float(val)
+            s("Requests/s", item.get("current_rps"))
+            s("Request Count", item.get("num_requests"))
+            s("Failure Count", item.get("num_failures"))
+            s("Average Response Time", item.get("avg_response_time"))
+            s("Median Response Time", item.get("median_response_time"))
+            s("Min Response Time", item.get("min_response_time"))
+            s("Max Response Time", item.get("max_response_time"))
+            s("Average Content Size", item.get("avg_content_length"))
+            # Percentiles commonly present
+            s("95%", item.get("response_time_percentile_0.95"))
+            s("99%", item.get("response_time_percentile_0.99"))
 
-        set_if_float("Requests/s", "current_rps")
-        set_if_float("Average Response Time", "total_avg_response_time")
-        set_if_float("50%", "response_time_percentile_0.5")
-        set_if_float("95%", "response_time_percentile_0.95")
+            fmap[name] = Row(name=name, type="HTML", data=data)
 
-        feature_name = html_path.stem
-        rows[feature_name] = Row(name=feature_name, type="HTML", data=data)
-    return rows
+        if fmap:
+            features[html_path.stem] = fmap
+    return features
 
 
 def pct_change(base: Optional[float], curr: Optional[float]) -> Optional[float]:
@@ -338,8 +337,8 @@ def compare_reports(
     ]
 
     # Also parse per-feature HTML pages if directories are given
-    base_html_rows = load_html_feature_rows(base_path if base_path.is_dir() else base_path.parent)
-    curr_html_rows = load_html_feature_rows(curr_path if curr_path.is_dir() else curr_path.parent)
+    base_html_map = load_html_feature_map(base_path if base_path.is_dir() else base_path.parent)
+    curr_html_map = load_html_feature_map(curr_path if curr_path.is_dir() else curr_path.parent)
 
     if as_json:
         # Produce a structured JSON dict
@@ -364,27 +363,31 @@ def compare_reports(
                     "pct_change": pct_change(bb, cc),
                 }
             out[key] = entry
-        # Add HTML features
-        html_keys = sorted(set(base_html_rows.keys()) | set(curr_html_rows.keys()))
-        for key in html_keys:
-            b = base_html_rows.get(key)
-            c = curr_html_rows.get(key)
-            fields = set(important_fields)
-            if b:
-                fields.update(b.data.keys())
-            if c:
-                fields.update(c.data.keys())
-            entry: Dict[str, Dict[str, Optional[float]]] = {}
-            for f in sorted(fields):
-                bb = b.data.get(f) if b else None
-                cc = c.data.get(f) if c else None
-                entry[f] = {
-                    "base": bb,
-                    "current": cc,
-                    "diff": diff(bb, cc),
-                    "pct_change": pct_change(bb, cc),
-                }
-            out[f"HTML:{key}"] = entry
+        # Add HTML features per endpoint
+        feature_names = sorted(set(base_html_map.keys()) | set(curr_html_map.keys()))
+        for feat in feature_names:
+            b_map = base_html_map.get(feat, {})
+            c_map = curr_html_map.get(feat, {})
+            endpoint_names = sorted(set(b_map.keys()) | set(c_map.keys()))
+            for ep in endpoint_names:
+                b = b_map.get(ep)
+                c = c_map.get(ep)
+                fields = set(important_fields)
+                if b:
+                    fields.update(b.data.keys())
+                if c:
+                    fields.update(c.data.keys())
+                entry: Dict[str, Dict[str, Optional[float]]] = {}
+                for f in sorted(fields):
+                    bb = b.data.get(f) if b else None
+                    cc = c.data.get(f) if c else None
+                    entry[f] = {
+                        "base": bb,
+                        "current": cc,
+                        "diff": diff(bb, cc),
+                        "pct_change": pct_change(bb, cc),
+                    }
+                out[f"HTML:{feat}:{ep}"] = entry
         print(json.dumps(out, indent=2))
         return 0
 
@@ -411,18 +414,23 @@ def compare_reports(
         )
 
     # Render HTML features
-    feature_keys = sorted(set(base_html_rows.keys()) | set(curr_html_rows.keys()))
+    feature_keys = sorted(set(base_html_map.keys()) | set(curr_html_map.keys()))
     if feature_keys:
         print_section("HTML Features")
         for fk in feature_keys:
             print_section(f"Feature: {fk}")
-            render_comparison(
-                base_html_rows.get(fk),
-                curr_html_rows.get(fk),
-                important_fields,
-                colorize=colorize,
-                show_verdict=show_verdict,
-            )
+            b_map = base_html_map.get(fk, {})
+            c_map = curr_html_map.get(fk, {})
+            ep_keys = sorted(set(b_map.keys()) | set(c_map.keys()))
+            for ep in ep_keys:
+                print_section(f"Endpoint: {ep}")
+                render_comparison(
+                    b_map.get(ep),
+                    c_map.get(ep),
+                    important_fields,
+                    colorize=colorize,
+                    show_verdict=show_verdict,
+                )
 
     return 0
 
