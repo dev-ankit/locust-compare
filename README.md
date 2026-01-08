@@ -13,24 +13,67 @@ Compare performance results between two Locust runs and show changes relative to
 
 - Python 3.8+ (no third-party dependencies).
 
+## Installation
+
+### With uvx (recommended)
+
+Run directly from GitHub without cloning:
+
+```bash
+uvx --from git+https://github.com/dev-ankit/locust-compare.git locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+Or from a local directory:
+
+```bash
+uvx --from . locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+Or from a cloned repository:
+
+```bash
+git clone https://github.com/dev-ankit/locust-compare.git
+cd locust-compare
+uvx --from . locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+Once published to PyPI, you can run without any prefix:
+
+```bash
+uvx locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+### With pip
+
+```bash
+pip install .
+locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+### Direct execution
+
+```bash
+python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
 ## Quick Start
 
 - Compare two run directories (each containing a `report.csv` and HTML files):
 
-```
-python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```bash
+locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
 ```
 
 - Compare two specific CSV files:
 
-```
-python3 compare_runs.py test_runs/HTML-Report-292/report.csv test_runs/HTML-Report-294/report.csv
+```bash
+locust-compare test_runs/HTML-Report-292/report.csv test_runs/HTML-Report-294/report.csv
 ```
 
 - JSON output for scripting:
 
-```
-python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 -o json
+```bash
+locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294 -o json
 ```
 
 - Markdown output with emoji indicators (✅ better, ❌ worse, ➖ same):
@@ -41,8 +84,8 @@ python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 -o m
 
 - Colorize text output (green=better, red=worse):
 
-```
-python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --color
+```bash
+locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294 --color
 ```
 
 Exit code is `0` on success and `1` on error.
@@ -91,7 +134,7 @@ Verdict emojis:
 
 ## JSON Schema
 
-The `--json` output is a single JSON object containing keys for each compared item.
+The `-o json` output is a single JSON object containing keys for each compared item.
 
 - CSV items use their request name; the aggregated row is keyed as `Aggregated`.
 - HTML feature pages are keyed as `HTML:<feature_file_stem>`.
