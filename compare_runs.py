@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import atexit
 import csv
 import json
+import tempfile
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -9,6 +12,22 @@ import re
 import html as htmllib
 from datetime import datetime
 from urllib.parse import parse_qsl
+import shutil
+
+# Track temporary directories for cleanup
+_temp_dirs: List[str] = []
+
+
+def _cleanup_temp_dirs():
+    """Clean up temporary directories created for zip extraction."""
+    for d in _temp_dirs:
+        try:
+            shutil.rmtree(d)
+        except Exception:
+            pass
+
+
+atexit.register(_cleanup_temp_dirs)
 
 
 NUMERIC_FIELDS = {
@@ -54,6 +73,37 @@ def _as_float(value: str) -> Optional[float]:
         return float(value)
     except ValueError:
         return None
+
+
+def _resolve_path(path: Path) -> Path:
+    """Resolve a path, extracting zip files to a temporary directory if needed.
+
+    If `path` is a zip file, extracts it to a temporary directory and returns
+    the path to the extracted contents. The temporary directory is automatically
+    cleaned up when the program exits.
+
+    If `path` is not a zip file, returns it unchanged.
+    """
+    if path.is_file() and path.suffix.lower() == ".zip":
+        if not zipfile.is_zipfile(path):
+            raise ValueError(f"File has .zip extension but is not a valid zip file: {path}")
+
+        tmpdir = tempfile.mkdtemp(prefix="locust-compare-")
+        _temp_dirs.append(tmpdir)
+
+        with zipfile.ZipFile(path, "r") as zf:
+            zf.extractall(tmpdir)
+
+        extracted = Path(tmpdir)
+
+        # If the zip contains a single directory, use that as the root
+        contents = list(extracted.iterdir())
+        if len(contents) == 1 and contents[0].is_dir():
+            return contents[0]
+
+        return extracted
+
+    return path
 
 
 def load_report(path: Path) -> List[Row]:
@@ -388,6 +438,10 @@ def compare_reports(
     colorize: bool = False,
     show_verdict: bool = True,
 ) -> int:
+    # Resolve paths (extract zip files if needed)
+    base_path = _resolve_path(base_path)
+    curr_path = _resolve_path(curr_path)
+
     base_rows = load_report(base_path)
     curr_rows = load_report(curr_path)
 
