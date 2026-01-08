@@ -7,7 +7,7 @@ Compare performance results between two Locust runs and show changes relative to
 - Compare any two runs (base vs. current).
 - Parses CSV `report.csv` for aggregated and per-endpoint metrics.
 - Parses per-feature `.html` pages and compares the latest history sample.
-- Outputs human-readable tables or machine-friendly JSON.
+- Outputs human-readable tables, markdown with emoji indicators, or machine-friendly JSON.
 
 ## Requirements
 
@@ -39,6 +39,12 @@ python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --js
 python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --color
 ```
 
+- Markdown output with emoji indicators (✅ better, ❌ worse, ➖ same):
+
+```
+python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --markdown
+```
+
 Exit code is `0` on success and `1` on error.
 
 ## What It Compares
@@ -59,6 +65,28 @@ If a metric is not available for an item, it is shown as `-`.
 ## Example Output (truncated)
 
 <img width="598" height="255" alt="image" src="https://github.com/user-attachments/assets/f5394045-6d1e-498e-aa3f-624928ec70a7" />
+
+
+## Markdown Output Example
+
+The `--markdown` flag produces markdown tables with emoji indicators for verdicts:
+
+```markdown
+## Aggregated
+
+| Metric | Base | Current | Diff | % Change | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Requests/s | 286.200 | 300 | +13.800 | +4.8% | ✅ |
+| Request Count | 1500 | 1800 | +300 | +20.0% | ✅ |
+| Failure Count | 7 | 4 | -3 | -42.9% | ✅ |
+| Average Response Time | 85.200 | 78.500 | -6.700 | -7.9% | ✅ |
+| 95% | 150 | 140 | -10 | -6.7% | ✅ |
+```
+
+Verdict emojis:
+- ✅ Better performance
+- ❌ Worse performance  
+- ➖ No change
 
 
 ## JSON Schema
