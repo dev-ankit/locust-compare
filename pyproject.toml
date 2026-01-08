@@ -50,5 +50,4 @@ exclude_lines = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
 only-include = ["compare_runs.py"]

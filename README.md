@@ -17,16 +17,24 @@ Compare performance results between two Locust runs and show changes relative to
 
 ### With uvx (recommended)
 
-Run directly without installation:
+Run directly from a local directory:
+
+```bash
+uvx --from . locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+Or from a cloned repository:
+
+```bash
+git clone https://github.com/dev-ankit/locust-compare.git
+cd locust-compare
+uvx --from . locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
+```
+
+Once published to PyPI, you can run without cloning:
 
 ```bash
 uvx locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
-```
-
-Or install from a local directory:
-
-```bash
-uvx --from /path/to/locust-compare locust-compare test_runs/HTML-Report-292 test_runs/HTML-Report-294
 ```
 
 ### With pip
