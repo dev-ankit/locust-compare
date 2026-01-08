@@ -58,28 +58,8 @@ If a metric is not available for an item, it is shown as `-`.
 
 ## Example Output (truncated)
 
-```
-Aggregated
-----------
-Metric                 Base      Current   Diff      % Change
----------------------  --------  --------  --------  --------
-Requests/s             268.623   196.786   -71.836   -26.7%
-Average Response Time  71.801    98.069    +26.268   +36.6%
-95%                    150       170       +20       +13.3%
-...
+<img width="598" height="255" alt="image" src="https://github.com/user-attachments/assets/f5394045-6d1e-498e-aa3f-624928ec70a7" />
 
-HTML Features
--------------
-
-Feature: conferences_widget_all_lists
--------------------------------------
-Metric                 Base     Current  Diff     % Change
----------------------  -------  -------  -------  --------
-Requests/s             271.500  189.800  -81.700  -30.1%
-Average Response Time  71.800   98.060   +26.260  +36.6%
-95%                    160      190      +30      +18.8%
-50%                    59       94       +35      +59.3%
-```
 
 ## JSON Schema
 
