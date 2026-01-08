@@ -112,7 +112,7 @@ class TestCompareReportsWithZip:
             with zipfile.ZipFile(curr_zip, "w") as zf:
                 zf.writestr("report.csv", sample_csv_content_v2)
 
-            result = compare_reports(base_zip, curr_zip, as_json=True)
+            result = compare_reports(base_zip, curr_zip, output_format="json")
             assert result == 0
 
             captured = capsys.readouterr()
@@ -126,7 +126,7 @@ class TestCompareReportsWithZip:
             with zipfile.ZipFile(base_zip, "w") as zf:
                 zf.writestr("report.csv", sample_csv_content)
 
-            result = compare_reports(base_zip, temp_test_dir_v2, as_json=True)
+            result = compare_reports(base_zip, temp_test_dir_v2, output_format="json")
             assert result == 0
 
     def test_compare_directory_to_zip(self, temp_test_dir, sample_csv_content_v2, capsys):
@@ -137,7 +137,7 @@ class TestCompareReportsWithZip:
             with zipfile.ZipFile(curr_zip, "w") as zf:
                 zf.writestr("report.csv", sample_csv_content_v2)
 
-            result = compare_reports(temp_test_dir, curr_zip, as_json=True)
+            result = compare_reports(temp_test_dir, curr_zip, output_format="json")
             assert result == 0
 
     def test_zip_with_nested_directory_structure(self, sample_csv_content, sample_csv_content_v2, capsys):
@@ -152,7 +152,7 @@ class TestCompareReportsWithZip:
             with zipfile.ZipFile(curr_zip, "w") as zf:
                 zf.writestr("HTML-Report-200/report.csv", sample_csv_content_v2)
 
-            result = compare_reports(base_zip, curr_zip, as_json=True)
+            result = compare_reports(base_zip, curr_zip, output_format="json")
             assert result == 0
 
     def test_zip_with_html_files(self, sample_csv_content, sample_html_template_args, capsys):
@@ -169,7 +169,7 @@ class TestCompareReportsWithZip:
                 zf.writestr("report.csv", sample_csv_content)
                 zf.writestr("feature_test.html", sample_html_template_args)
 
-            result = compare_reports(base_zip, curr_zip, as_json=True)
+            result = compare_reports(base_zip, curr_zip, output_format="json")
             assert result == 0
 
             captured = capsys.readouterr()

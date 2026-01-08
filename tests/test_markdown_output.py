@@ -31,7 +31,7 @@ class TestMarkdownOutput:
 
     def test_markdown_output_structure(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown output has correct structure."""
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True)
+        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown")
         assert result == 0
 
         captured = capsys.readouterr()
@@ -48,7 +48,7 @@ class TestMarkdownOutput:
 
     def test_markdown_output_includes_metrics(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown output includes all expected metrics."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown")
 
         captured = capsys.readouterr()
         output = captured.out
@@ -61,7 +61,7 @@ class TestMarkdownOutput:
 
     def test_markdown_output_includes_emojis(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown output includes emoji indicators."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True, show_verdict=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=True)
 
         captured = capsys.readouterr()
         output = captured.out
@@ -71,7 +71,7 @@ class TestMarkdownOutput:
 
     def test_markdown_output_no_verdict(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test markdown output without verdict column."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True, show_verdict=False)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=False)
 
         captured = capsys.readouterr()
         output = captured.out
@@ -85,7 +85,7 @@ class TestMarkdownOutput:
 
     def test_markdown_output_no_color_codes(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown output does not contain ANSI color codes."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown")
 
         captured = capsys.readouterr()
         output = captured.out
@@ -97,7 +97,7 @@ class TestMarkdownOutput:
 
     def test_markdown_table_format(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown tables are properly formatted."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True, show_verdict=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=True)
 
         captured = capsys.readouterr()
         output = captured.out
@@ -130,7 +130,7 @@ GET,/api/test,100
                 if html_file.name != "htmlpublisher-wrapper.html":
                     shutil.copy(html_file, other / html_file.name)
 
-            compare_reports(temp_dir_with_html, other, as_markdown=True)
+            compare_reports(temp_dir_with_html, other, output_format="markdown")
 
             captured = capsys.readouterr()
             output = captured.out
@@ -141,7 +141,7 @@ GET,/api/test,100
 
     def test_markdown_output_values(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown output contains correct values."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_markdown=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown")
 
         captured = capsys.readouterr()
         output = captured.out
@@ -156,7 +156,7 @@ class TestMarkdownCompatibility:
 
     def test_json_still_works(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that JSON output is not affected by markdown changes."""
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, as_json=True)
+        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="json")
         assert result == 0
 
         captured = capsys.readouterr()
@@ -165,7 +165,7 @@ class TestMarkdownCompatibility:
 
     def test_normal_output_still_works(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that normal human-readable output still works."""
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, as_json=False, as_markdown=False)
+        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text")
         assert result == 0
 
         captured = capsys.readouterr()
@@ -177,7 +177,7 @@ class TestMarkdownCompatibility:
 
     def test_color_output_still_works(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that colorized output still works."""
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, colorize=True, as_markdown=False)
+        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text", colorize=True)
         assert result == 0
 
         captured = capsys.readouterr()

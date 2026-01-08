@@ -504,11 +504,10 @@ def render_comparison(
 def compare_reports(
     base_path: Path,
     curr_path: Path,
-    as_json: bool = False,
+    output_format: str = "text",
     *,
     colorize: bool = False,
     show_verdict: bool = True,
-    as_markdown: bool = False,
 ) -> int:
     # Resolve paths (extract zip files if needed)
     base_path = _resolve_path(base_path)
@@ -537,7 +536,7 @@ def compare_reports(
     base_html_map = load_html_feature_map(base_path if base_path.is_dir() else base_path.parent)
     curr_html_map = load_html_feature_map(curr_path if curr_path.is_dir() else curr_path.parent)
 
-    if as_json:
+    if output_format == "json":
         # Produce a structured JSON dict
         out: Dict[str, Dict[str, Dict[str, Optional[float]]]] = {}
         for key in all_keys:
@@ -589,7 +588,7 @@ def compare_reports(
         return 0
 
     # Human readable output
-    if as_markdown:
+    if output_format == "markdown":
         print("# Locust Performance Comparison")
         print("")
         print_section_markdown("Aggregated", 2)
@@ -681,16 +680,17 @@ def main():
     )
     parser.add_argument("base", type=Path, help="Base run directory or report.csv path")
     parser.add_argument("current", type=Path, help="Current run directory or report.csv path")
-    parser.add_argument("--json", action="store_true", help="Output results as JSON")
     parser.add_argument(
-        "--markdown",
-        action="store_true",
-        help="Output results as Markdown with emoji indicators (✅ better, ❌ worse, ➖ same)",
+        "-o",
+        "--output",
+        choices=["text", "json", "markdown"],
+        default="text",
+        help="Output format: text (default), json, or markdown with emoji indicators (✅ better, ❌ worse, ➖ same)",
     )
     parser.add_argument(
         "--color",
         action="store_true",
-        help="Colorize rows: green if better, red if worse",
+        help="Colorize rows: green if better, red if worse (only for text output)",
     )
     parser.add_argument(
         "--no-verdict",
@@ -704,10 +704,9 @@ def main():
         return compare_reports(
             args.base,
             args.current,
-            as_json=args.json,
+            output_format=args.output,
             colorize=args.color,
             show_verdict=args.show_verdict,
-            as_markdown=args.markdown,
         )
     except Exception as e:
         print(f"Error: {e}")

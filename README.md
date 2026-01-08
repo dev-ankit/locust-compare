@@ -30,19 +30,19 @@ python3 compare_runs.py test_runs/HTML-Report-292/report.csv test_runs/HTML-Repo
 - JSON output for scripting:
 
 ```
-python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --json
-```
-
-- Colorize output and show verdicts (green=better, red=worse):
-
-```
-python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --color
+python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 -o json
 ```
 
 - Markdown output with emoji indicators (✅ better, ❌ worse, ➖ same):
 
 ```
-python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --markdown
+python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 -o markdown
+```
+
+- Colorize text output (green=better, red=worse):
+
+```
+python3 compare_runs.py test_runs/HTML-Report-292 test_runs/HTML-Report-294 --color
 ```
 
 Exit code is `0` on success and `1` on error.
@@ -69,7 +69,7 @@ If a metric is not available for an item, it is shown as `-`.
 
 ## Markdown Output Example
 
-The `--markdown` flag produces markdown tables with emoji indicators for verdicts:
+The `-o markdown` flag produces markdown tables with emoji indicators for verdicts:
 
 ```markdown
 ## Aggregated
