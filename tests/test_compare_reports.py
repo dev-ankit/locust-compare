@@ -15,7 +15,7 @@ class TestCompareReportsJson:
     """Tests for compare_reports with JSON output."""
 
     def test_json_output_structure(self, temp_test_dir, temp_test_dir_v2, capsys):
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, as_json=True)
+        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="json")
         assert result == 0
 
         captured = capsys.readouterr()
@@ -27,7 +27,7 @@ class TestCompareReportsJson:
         assert "/api/login" in data
 
     def test_json_output_metrics(self, temp_test_dir, temp_test_dir_v2, capsys):
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_json=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="json")
 
         captured = capsys.readouterr()
         data = json.loads(captured.out)
@@ -42,7 +42,7 @@ class TestCompareReportsJson:
         assert "pct_change" in metric
 
     def test_json_output_values(self, temp_test_dir, temp_test_dir_v2, capsys):
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_json=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="json")
 
         captured = capsys.readouterr()
         data = json.loads(captured.out)
@@ -61,7 +61,7 @@ class TestCompareReportsHuman:
     """Tests for compare_reports with human-readable output."""
 
     def test_human_output_includes_sections(self, temp_test_dir, temp_test_dir_v2, capsys):
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, as_json=False)
+        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text")
         assert result == 0
 
         captured = capsys.readouterr()
@@ -72,7 +72,7 @@ class TestCompareReportsHuman:
         assert "Endpoint:" in output
 
     def test_human_output_includes_metrics(self, temp_test_dir, temp_test_dir_v2, capsys):
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_json=False)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text")
 
         captured = capsys.readouterr()
         output = captured.out
@@ -83,7 +83,7 @@ class TestCompareReportsHuman:
         assert "Average Response Time" in output
 
     def test_human_output_includes_verdict(self, temp_test_dir, temp_test_dir_v2, capsys):
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_json=False, show_verdict=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text", show_verdict=True)
 
         captured = capsys.readouterr()
         output = captured.out
@@ -94,7 +94,7 @@ class TestCompareReportsHuman:
         assert "better" in output or "worse" in output or "same" in output
 
     def test_human_output_no_verdict(self, temp_test_dir, temp_test_dir_v2, capsys):
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_json=False, show_verdict=False)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text", show_verdict=False)
 
         captured = capsys.readouterr()
         output = captured.out
@@ -105,7 +105,7 @@ class TestCompareReportsHuman:
         assert "Verdict" not in header_line
 
     def test_human_output_colorize(self, temp_test_dir, temp_test_dir_v2, capsys):
-        compare_reports(temp_test_dir, temp_test_dir_v2, as_json=False, colorize=True)
+        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text", colorize=True)
 
         captured = capsys.readouterr()
         output = captured.out
@@ -119,7 +119,7 @@ class TestCompareReportsEdgeCases:
 
     def test_compare_same_report(self, temp_test_dir, capsys):
         """Comparing a report to itself should show no changes."""
-        compare_reports(temp_test_dir, temp_test_dir, as_json=True)
+        compare_reports(temp_test_dir, temp_test_dir, output_format="json")
 
         captured = capsys.readouterr()
         data = json.loads(captured.out)
@@ -141,7 +141,7 @@ class TestCompareReportsEdgeCases:
             base_path.write_text(base_csv)
             curr_path.write_text(sample_csv_content_v2)
 
-            compare_reports(Path(base_dir), Path(curr_dir), as_json=True)
+            compare_reports(Path(base_dir), Path(curr_dir), output_format="json")
 
             captured = capsys.readouterr()
             data = json.loads(captured.out)
@@ -164,7 +164,7 @@ class TestCompareReportsEdgeCases:
             base_path.write_text(sample_csv_content)
             curr_path.write_text(curr_csv)
 
-            compare_reports(Path(base_dir), Path(curr_dir), as_json=True)
+            compare_reports(Path(base_dir), Path(curr_dir), output_format="json")
 
             captured = capsys.readouterr()
             data = json.loads(captured.out)
@@ -195,7 +195,7 @@ GET,/api/test,100
                 if html_file.name != "htmlpublisher-wrapper.html":
                     shutil.copy(html_file, other / html_file.name)
 
-            compare_reports(temp_dir_with_html, other, as_json=True)
+            compare_reports(temp_dir_with_html, other, output_format="json")
 
             captured = capsys.readouterr()
             data = json.loads(captured.out)
@@ -218,7 +218,7 @@ GET,/api/test,100
                 if html_file.name != "htmlpublisher-wrapper.html":
                     shutil.copy(html_file, other / html_file.name)
 
-            compare_reports(temp_dir_with_html, other, as_json=False)
+            compare_reports(temp_dir_with_html, other, output_format="text")
 
             captured = capsys.readouterr()
             output = captured.out
@@ -238,7 +238,7 @@ class TestCompareReportsRealData:
         if not base.exists() or not curr.exists():
             pytest.skip("Real test data not available")
 
-        result = compare_reports(base, curr, as_json=True)
+        result = compare_reports(base, curr, output_format="json")
         assert result == 0
 
         captured = capsys.readouterr()

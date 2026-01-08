@@ -333,6 +333,13 @@ def print_section(title: str):
     print("-" * len(title))
 
 
+def print_section_markdown(title: str, level: int = 2):
+    """Print a markdown section header."""
+    print("")
+    print("#" * level + " " + title)
+    print("")
+
+
 def _metric_direction(metric: str) -> str:
     """Return 'higher', 'lower', or 'neutral' for a metric's desirable direction.
 
@@ -363,6 +370,70 @@ def _verdict_for(metric: str, b: Optional[float], c: Optional[float]) -> Optiona
     if direction == "lower":
         return "better" if c < b else "worse"
     return None
+
+
+def _verdict_to_emoji(verdict: Optional[str]) -> str:
+    """Convert verdict to emoji for markdown output."""
+    if verdict == "better":
+        return "✅"
+    elif verdict == "worse":
+        return "❌"
+    elif verdict == "same":
+        return "➖"
+    return ""
+
+
+def render_comparison_markdown(
+    base_row: Optional[Row],
+    curr_row: Optional[Row],
+    important_fields: List[str],
+    *,
+    show_verdict: bool = True,
+):
+    """Render comparison as markdown table with emoji indicators."""
+    headers = [
+        "Metric",
+        "Base",
+        "Current",
+        "Diff",
+        "% Change",
+    ]
+    if show_verdict:
+        headers.append("Verdict")
+    rows: List[List[str]] = []
+
+    base_data = base_row.data if base_row else {}
+    curr_data = curr_row.data if curr_row else {}
+
+    fields = important_fields[:]
+    # Also include any extra percentile columns present in data
+    extra_fields = [k for k in curr_data.keys() | base_data.keys() if k.endswith("%") and k not in fields]
+    fields.extend(sorted(extra_fields))
+
+    for field in fields:
+        b = base_data.get(field)
+        c = curr_data.get(field)
+        d = diff(b, c)
+        p = pct_change(b, c)
+        p_str = "-" if p is None else f"{p:+.1f}%"
+        row = [
+            field,
+            format_number(b),
+            format_number(c),
+            ("-" if d is None else (f"{d:+.3f}" if abs(d - round(d)) > 1e-9 else f"{int(d):+d}")),
+            p_str,
+        ]
+        if show_verdict:
+            v = _verdict_for(field, b, c)
+            emoji = _verdict_to_emoji(v)
+            row.append(emoji)
+        rows.append(row)
+
+    # Print markdown table
+    print("| " + " | ".join(headers) + " |")
+    print("| " + " | ".join(["---"] * len(headers)) + " |")
+    for r in rows:
+        print("| " + " | ".join(r) + " |")
 
 
 def render_comparison(
@@ -433,7 +504,7 @@ def render_comparison(
 def compare_reports(
     base_path: Path,
     curr_path: Path,
-    as_json: bool = False,
+    output_format: str = "text",
     *,
     colorize: bool = False,
     show_verdict: bool = True,
@@ -465,7 +536,7 @@ def compare_reports(
     base_html_map = load_html_feature_map(base_path if base_path.is_dir() else base_path.parent)
     curr_html_map = load_html_feature_map(curr_path if curr_path.is_dir() else curr_path.parent)
 
-    if as_json:
+    if output_format == "json":
         # Produce a structured JSON dict
         out: Dict[str, Dict[str, Dict[str, Optional[float]]]] = {}
         for key in all_keys:
@@ -517,45 +588,85 @@ def compare_reports(
         return 0
 
     # Human readable output
-    print_section("Aggregated")
-    render_comparison(
-        base_idx.get("__Aggregated__"),
-        curr_idx.get("__Aggregated__"),
-        important_fields,
-        colorize=colorize,
-        show_verdict=show_verdict,
-    )
+    if output_format == "markdown":
+        print("# Locust Performance Comparison")
+        print("")
+        print_section_markdown("Aggregated", 2)
+        render_comparison_markdown(
+            base_idx.get("__Aggregated__"),
+            curr_idx.get("__Aggregated__"),
+            important_fields,
+            show_verdict=show_verdict,
+        )
 
-    endpoint_keys = [k for k in all_keys if k != "__Aggregated__"]
-    for ek in endpoint_keys:
-        title = f"Endpoint: {ek}"
-        print_section(title)
+        endpoint_keys = [k for k in all_keys if k != "__Aggregated__"]
+        for ek in endpoint_keys:
+            title = f"Endpoint: {ek}"
+            print_section_markdown(title, 3)
+            render_comparison_markdown(
+                base_idx.get(ek),
+                curr_idx.get(ek),
+                important_fields,
+                show_verdict=show_verdict,
+            )
+
+        # Render HTML features
+        feature_keys = sorted(set(base_html_map.keys()) | set(curr_html_map.keys()))
+        if feature_keys:
+            print_section_markdown("HTML Features", 2)
+            for fk in feature_keys:
+                print_section_markdown(f"Feature: {fk}", 3)
+                b_map = base_html_map.get(fk, {})
+                c_map = curr_html_map.get(fk, {})
+                ep_keys = sorted(set(b_map.keys()) | set(c_map.keys()))
+                for ep in ep_keys:
+                    print_section_markdown(f"Endpoint: {ep}", 4)
+                    render_comparison_markdown(
+                        b_map.get(ep),
+                        c_map.get(ep),
+                        important_fields,
+                        show_verdict=show_verdict,
+                    )
+    else:
+        print_section("Aggregated")
         render_comparison(
-            base_idx.get(ek),
-            curr_idx.get(ek),
+            base_idx.get("__Aggregated__"),
+            curr_idx.get("__Aggregated__"),
             important_fields,
             colorize=colorize,
             show_verdict=show_verdict,
         )
 
-    # Render HTML features
-    feature_keys = sorted(set(base_html_map.keys()) | set(curr_html_map.keys()))
-    if feature_keys:
-        print_section("HTML Features")
-        for fk in feature_keys:
-            print_section(f"Feature: {fk}")
-            b_map = base_html_map.get(fk, {})
-            c_map = curr_html_map.get(fk, {})
-            ep_keys = sorted(set(b_map.keys()) | set(c_map.keys()))
-            for ep in ep_keys:
-                print_section(f"Endpoint: {ep}")
-                render_comparison(
-                    b_map.get(ep),
-                    c_map.get(ep),
-                    important_fields,
-                    colorize=colorize,
-                    show_verdict=show_verdict,
-                )
+        endpoint_keys = [k for k in all_keys if k != "__Aggregated__"]
+        for ek in endpoint_keys:
+            title = f"Endpoint: {ek}"
+            print_section(title)
+            render_comparison(
+                base_idx.get(ek),
+                curr_idx.get(ek),
+                important_fields,
+                colorize=colorize,
+                show_verdict=show_verdict,
+            )
+
+        # Render HTML features
+        feature_keys = sorted(set(base_html_map.keys()) | set(curr_html_map.keys()))
+        if feature_keys:
+            print_section("HTML Features")
+            for fk in feature_keys:
+                print_section(f"Feature: {fk}")
+                b_map = base_html_map.get(fk, {})
+                c_map = curr_html_map.get(fk, {})
+                ep_keys = sorted(set(b_map.keys()) | set(c_map.keys()))
+                for ep in ep_keys:
+                    print_section(f"Endpoint: {ep}")
+                    render_comparison(
+                        b_map.get(ep),
+                        c_map.get(ep),
+                        important_fields,
+                        colorize=colorize,
+                        show_verdict=show_verdict,
+                    )
 
     return 0
 
@@ -569,11 +680,17 @@ def main():
     )
     parser.add_argument("base", type=Path, help="Base run directory or report.csv path")
     parser.add_argument("current", type=Path, help="Current run directory or report.csv path")
-    parser.add_argument("--json", action="store_true", help="Output results as JSON")
+    parser.add_argument(
+        "-o",
+        "--output",
+        choices=["text", "json", "markdown"],
+        default="text",
+        help="Output format: text (default), json, or markdown with emoji indicators (✅ better, ❌ worse, ➖ same)",
+    )
     parser.add_argument(
         "--color",
         action="store_true",
-        help="Colorize rows: green if better, red if worse",
+        help="Colorize rows: green if better, red if worse (only for text output)",
     )
     parser.add_argument(
         "--no-verdict",
@@ -587,7 +704,7 @@ def main():
         return compare_reports(
             args.base,
             args.current,
-            as_json=args.json,
+            output_format=args.output,
             colorize=args.color,
             show_verdict=args.show_verdict,
         )
