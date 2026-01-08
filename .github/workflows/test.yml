@@ -15,17 +15,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    
-    - name: Install dependencies
+
+    - name: Install and test locust-compare
+      working-directory: tools/locust-compare
       run: |
         python -m pip install --upgrade pip
         pip install -e .[dev]
-    
-    - name: Run tests
-      run: |
         pytest
