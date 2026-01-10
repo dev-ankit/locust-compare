@@ -31,13 +31,6 @@ Or install in editable mode for development:
 pip install -e .
 ```
 
-### For Django support
-
-Install with Django optional dependencies:
-
-```bash
-pip install ".[django]"
-```
 
 ## Usage
 
@@ -68,9 +61,11 @@ config-utils capture-env -o config.yml -f yml
 
 ### Capture Django Settings
 
-Capture Django project settings to a YAML file:
+Capture Django project settings to a YAML file using `python manage.py shell`:
 
 ```bash
+# Run from your Django project directory
+cd /path/to/your/django/project
 config-utils capture-django-settings
 ```
 
@@ -80,35 +75,48 @@ This will create `django_settings.yaml` with all Django settings.
 
 - `-o, --output PATH`: Specify output file path (default: `django_settings.yaml`)
 - `-f, --format`: Output format, yaml or yml (default: `yaml`)
+- `-m, --manage-py PATH`: Path to manage.py (default: `manage.py`)
 - `-s, --settings`: Django settings module (e.g., `myproject.settings`)
 
 #### Examples
 
 ```bash
-# Using DJANGO_SETTINGS_MODULE environment variable
-export DJANGO_SETTINGS_MODULE=myproject.settings
+# From Django project root directory
 config-utils capture-django-settings
 
 # Specifying settings module via command line
 config-utils capture-django-settings -s myproject.settings
 
 # Custom output file
-config-utils capture-django-settings -o my_django_config.yaml -s myproject.settings
+config-utils capture-django-settings -o my_django_config.yaml
+
+# Specify manage.py path if not in current directory
+config-utils capture-django-settings -m /path/to/manage.py
+
+# Using DJANGO_SETTINGS_MODULE environment variable
+export DJANGO_SETTINGS_MODULE=myproject.settings
+config-utils capture-django-settings
 ```
+
+**Note**: This command must be run from your Django project directory or you must specify the path to `manage.py` using the `--manage-py` option.
 
 ### Using with uvx
 
 You can run the tool directly without installation:
 
 ```bash
-# From the project directory
+# Capture environment variables
 uvx --from . config-utils capture-env
 
 # With options
 uvx --from . config-utils capture-env -o custom.yaml
 
-# Django settings
-uvx --from . config-utils capture-django-settings -s myproject.settings
+# Django settings (from Django project directory)
+cd /path/to/django/project
+uvx --from /path/to/config-utils config-utils capture-django-settings
+
+# Or specify manage.py path
+uvx --from /path/to/config-utils config-utils capture-django-settings -m /path/to/manage.py
 ```
 
 ## Requirements
@@ -116,7 +124,8 @@ uvx --from . config-utils capture-django-settings -s myproject.settings
 - Python >= 3.8
 - click >= 8.0.0
 - pyyaml >= 6.0
-- Django >= 3.2 (optional, for capture-django-settings)
+
+**For Django settings capture**: The command uses `python manage.py shell`, so Django must be installed in your Django project's environment. The config-utils tool itself does not need Django as a dependency.
 
 ## Development
 

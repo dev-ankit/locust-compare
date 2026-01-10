@@ -3,6 +3,8 @@
 import os
 import sys
 import yaml
+import subprocess
+import json
 from pathlib import Path
 import click
 
@@ -65,59 +67,82 @@ def capture_env(output, format):
     help='Output format (default: yaml)',
 )
 @click.option(
+    '--manage-py',
+    '-m',
+    default='manage.py',
+    help='Path to manage.py (default: manage.py)',
+    type=click.Path(exists=True),
+)
+@click.option(
     '--settings',
     '-s',
     help='Django settings module (e.g., myproject.settings)',
     envvar='DJANGO_SETTINGS_MODULE',
 )
-def capture_django_settings(output, format, settings):
+def capture_django_settings(output, format, manage_py, settings):
     """Capture Django settings and store them in YAML format.
 
-    Requires Django to be installed and DJANGO_SETTINGS_MODULE to be set,
-    or pass it via --settings option.
+    Uses 'python manage.py shell' to access Django settings.
+    Requires manage.py to be present in the current directory or specify path with --manage-py.
     """
     try:
-        # Set Django settings module if provided
-        if settings:
-            os.environ['DJANGO_SETTINGS_MODULE'] = settings
-
-        # Check if DJANGO_SETTINGS_MODULE is set
-        if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+        # Check if manage.py exists
+        manage_path = Path(manage_py)
+        if not manage_path.exists():
             click.echo(
-                "✗ Error: DJANGO_SETTINGS_MODULE not set. "
-                "Use --settings option or set the environment variable.",
+                f"✗ Error: manage.py not found at {manage_path}. "
+                "Run this command from your Django project root or use --manage-py to specify the path.",
                 err=True
             )
             sys.exit(1)
 
-        # Import Django
+        # Python script to run in Django shell
+        django_script = """
+import json
+from django.conf import settings
+
+settings_dict = {}
+for setting in dir(settings):
+    if setting.isupper():
         try:
-            import django
-            from django.conf import settings as django_settings
-        except ImportError:
-            click.echo(
-                "✗ Error: Django is not installed. "
-                "Install it with: pip install django",
-                err=True
-            )
+            value = getattr(settings, setting)
+            # Convert non-serializable types to strings
+            if not isinstance(value, (str, int, float, bool, list, dict, type(None))):
+                value = str(value)
+            settings_dict[setting] = value
+        except Exception as e:
+            settings_dict[setting] = f"<Error retrieving value: {str(e)}>"
+
+print(json.dumps(settings_dict))
+"""
+
+        # Prepare environment variables
+        env = os.environ.copy()
+        if settings:
+            env['DJANGO_SETTINGS_MODULE'] = settings
+
+        # Run manage.py shell with the script
+        result = subprocess.run(
+            ['python', str(manage_path), 'shell'],
+            input=django_script,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=30
+        )
+
+        if result.returncode != 0:
+            click.echo(f"✗ Error running Django shell:", err=True)
+            click.echo(result.stderr, err=True)
             sys.exit(1)
 
-        # Setup Django
-        django.setup()
-
-        # Get all Django settings
-        settings_dict = {}
-        for setting in dir(django_settings):
-            # Skip private/magic attributes
-            if setting.isupper():
-                try:
-                    value = getattr(django_settings, setting)
-                    # Convert non-serializable types to strings
-                    if not isinstance(value, (str, int, float, bool, list, dict, type(None))):
-                        value = str(value)
-                    settings_dict[setting] = value
-                except Exception as e:
-                    settings_dict[setting] = f"<Error retrieving value: {str(e)}>"
+        # Parse JSON output
+        try:
+            settings_dict = json.loads(result.stdout.strip())
+        except json.JSONDecodeError:
+            click.echo(f"✗ Error: Could not parse Django settings output", err=True)
+            click.echo(f"Output: {result.stdout}", err=True)
+            sys.exit(1)
 
         # Ensure output path is Path object
         output_path = Path(output)
@@ -128,6 +153,9 @@ def capture_django_settings(output, format, settings):
 
         click.echo(f"✓ Captured {len(settings_dict)} Django settings to {output_path}")
 
+    except subprocess.TimeoutExpired:
+        click.echo("✗ Error: Django shell command timed out", err=True)
+        sys.exit(1)
     except Exception as e:
         click.echo(f"✗ Error: {str(e)}", err=True)
         sys.exit(1)
