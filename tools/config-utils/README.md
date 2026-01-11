@@ -271,15 +271,45 @@ uvx --from /path/to/config-utils config-utils capture-django-settings -m /path/t
 cd config-utils
 
 # Install in editable mode with development dependencies
-pip install -e .
+pip install -e ".[dev]"
 ```
+
+### Running Tests
+
+The project includes comprehensive pytest tests for all set operations functionality.
+
+```bash
+# Run all tests
+python -m pytest
+
+# Run with coverage report
+python -m pytest --cov=cli --cov-report=term-missing
+
+# Run specific test class
+python -m pytest tests/test_set_operations.py::TestUnionCommand -v
+
+# Run specific test
+python -m pytest tests/test_set_operations.py::TestUnionCommand::test_union_kv_mode -v
+```
+
+### Test Coverage
+
+The test suite covers:
+- All 5 set operations (union, intersect, diff, rdiff, symdiff)
+- Both comparison modes (keys and kv)
+- All depth levels (0, 1, 2+)
+- Error handling (missing files, invalid YAML, non-dict roots)
+- Edge cases (empty files, identical files, no matches)
+- Helper functions (flatten_dict, unflatten_dict, make_hashable, perform_set_operation, load_yaml_file)
 
 ### Project Structure
 
 ```
 config-utils/
 ├── cli.py
-├── config_utils/
+├── tests/
+│   ├── __init__.py
+│   └── test_set_operations.py
 ├── pyproject.toml
 └── README.md
 ```
