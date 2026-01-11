@@ -9,7 +9,23 @@ A CLI tool for capturing environment variables and Django settings in YAML forma
 
 ## Installation
 
-### Using uvx (Recommended)
+### Using uv tool install (Recommended)
+
+Install the tool globally using `uv`:
+
+```bash
+uv tool install .
+```
+
+Or install from a remote location:
+
+```bash
+uv tool install config-utils
+```
+
+This will install the `config-utils` executable in your PATH.
+
+### Using uvx
 
 Run the tool directly without installation:
 
@@ -143,9 +159,8 @@ pip install -e .
 
 ```
 config-utils/
+├── cli.py
 ├── config_utils/
-│   ├── __init__.py
-│   └── cli.py
 ├── pyproject.toml
 └── README.md
 ```

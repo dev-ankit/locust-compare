@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-config-utils = "config_utils.cli:main"
+config-utils = "cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["config_utils"]
+only-include = ["cli.py"]
