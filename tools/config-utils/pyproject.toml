@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "config-utils"
-version = "0.1.0"
-description = "CLI tool for capturing environment variables and Django settings"
+version = "0.2.0"
+description = "CLI tool for capturing environment variables, Django settings, and performing YAML set operations"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
