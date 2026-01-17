@@ -119,13 +119,17 @@ wt-worktree/
   - cli.py: 54% (CLI commands tested including secondary worktree usage)
 
 7. **Missing Special Symbol Support in `wt run`**
-   - Problem: The `wt run` command didn't support the `^` symbol for the default worktree, while `wt switch ^` did
-   - Error: Running `wt run ^ "git status"` resulted in "Error: Worktree '^' not found"
-   - Solution: Added special handling for the `^` symbol in the `run` command (cli.py:373-380) to resolve it to the default worktree name before looking up the worktree
-   - Implementation: Added check `if name == "^":` to get the default worktree using `ctx.manager.get_default_worktree()` and then use its name
-   - Tests: Added three new tests in test_cli.py:
+   - Problem: The `wt run` command didn't support the `^` (default) and `-` (previous) symbols, while `wt switch` did
+   - Error: Running `wt run ^ "git status"` or `wt run - "git diff"` resulted in "Error: Worktree not found"
+   - Solution: Added special handling for both `^` and `-` symbols in the `run` command (cli.py:379-409) to resolve them before looking up the worktree
+   - Implementation:
+     - Added check `if name == "-":` to find the previous worktree from `.wt_previous` file and resolve it to the worktree name
+     - Added check `elif name == "^":` to get the default worktree using `ctx.manager.get_default_worktree()` and use its name
+   - Tests: Added five new tests in test_cli.py:
      - `test_run_command`: Tests running a command in a normal worktree
      - `test_run_command_with_default_symbol`: Tests running a command using `^` symbol
+     - `test_run_command_with_previous_symbol`: Tests running a command using `-` symbol
+     - `test_run_command_no_previous_worktree`: Tests error handling when no previous worktree exists
      - `test_run_command_nonexistent_worktree`: Tests error handling for non-existent worktrees
    - Lesson: Always ensure consistency across commands - if a special symbol works in one command, users will expect it to work in related commands too
 

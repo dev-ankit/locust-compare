@@ -367,7 +367,30 @@ def run(ctx: Context, name: str, command: str):
         return
 
     # Handle special names
-    if name == "^":
+    if name == "-":
+        # Use previous worktree
+        if not ctx.previous_worktree_file.exists():
+            error("No previous worktree", EXIT_ERROR)
+            return
+
+        prev_path = ctx.previous_worktree_file.read_text().strip()
+        if not Path(prev_path).exists():
+            error(f"Previous worktree no longer exists: {prev_path}", EXIT_NOT_FOUND)
+            return
+
+        # Find worktree by path
+        found_name = None
+        for wt in ctx.manager.list_worktrees():
+            if str(wt["path"]) == prev_path:
+                found_name = wt["name"]
+                break
+
+        if not found_name:
+            error("Previous worktree not found", EXIT_NOT_FOUND)
+            return
+        name = found_name
+
+    elif name == "^":
         # Use default worktree
         default_wt = ctx.manager.get_default_worktree()
         if not default_wt:
