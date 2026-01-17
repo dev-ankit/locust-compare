@@ -140,16 +140,6 @@ def switch(ctx: Context, name: Optional[str], create: bool, base: Optional[str],
         # Worktree exists - switch to it
         current_wt = ctx.manager.get_current_worktree()
 
-        # Check for uncommitted changes in current worktree
-        if current_wt and git.has_uncommitted_changes(current_wt["path"]):
-            status = git.get_status_short(current_wt["path"])
-            if not confirm(
-                f"Current worktree has uncommitted changes:\n{status}\n"
-                "Switch anyway?",
-                default=False
-            ):
-                sys.exit(EXIT_CANCELLED)
-
         # Record current worktree as previous
         if current_wt:
             ctx.previous_worktree_file.write_text(str(current_wt["path"]))
