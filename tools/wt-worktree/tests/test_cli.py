@@ -224,6 +224,24 @@ def test_run_command_with_default_symbol(runner, initialized_repo):
     assert result.exit_code == 0
 
 
+def test_run_command_with_previous_symbol(runner, initialized_repo, no_prompt):
+    """Test wt run command with - symbol for previous worktree."""
+    # Create a worktree and switch to it to establish a previous worktree
+    runner.invoke(cli, ["switch", "-c", "feat"])
+    runner.invoke(cli, ["switch", "main"])
+
+    # Now run a command in previous worktree using -
+    result = runner.invoke(cli, ["run", "-", "echo hello"])
+    assert result.exit_code == 0
+
+
+def test_run_command_no_previous_worktree(runner, initialized_repo):
+    """Test wt run command with - symbol when there's no previous worktree."""
+    result = runner.invoke(cli, ["run", "-", "echo hello"])
+    assert result.exit_code == 1
+    assert "No previous worktree" in result.output
+
+
 def test_run_command_nonexistent_worktree(runner, initialized_repo):
     """Test wt run command with non-existent worktree."""
     result = runner.invoke(cli, ["run", "nonexistent", "echo hello"])
