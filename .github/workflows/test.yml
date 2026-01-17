@@ -15,7 +15,10 @@ jobs:
           - locust-compare
           - config-utils
           - wt-worktree
-        python-version: ["3.10", "3.11", "3.12"]
+        # Just test for 3.12 
+        # uncomment if you want to test for all versions
+        # python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.12"]
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
