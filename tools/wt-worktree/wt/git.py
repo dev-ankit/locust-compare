@@ -172,6 +172,7 @@ def configure_push_remote(branch: str, remote: str = "origin",
         branch: Local branch name
         remote: Remote name
         remote_branch: Remote branch name (defaults to same as local)
+        path: Repository path to run git commands in
     """
     if remote_branch is None:
         remote_branch = branch
