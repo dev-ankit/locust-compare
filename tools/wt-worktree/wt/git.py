@@ -491,3 +491,52 @@ def fetch_remote(remote: str = "origin", path: Optional[Path] = None):
         path: Repository path
     """
     run_git(["fetch", remote], cwd=path)
+
+
+def enable_worktree_config(path: Path):
+    """
+    Enable worktree-specific config support.
+
+    This must be called before using --worktree flag in git config.
+
+    Args:
+        path: Path to any worktree in the repository
+    """
+    # Check if already enabled
+    result = run_git(["config", "extensions.worktreeConfig"], cwd=path, check=False)
+    if result.returncode != 0 or result.stdout.strip() != "true":
+        # Enable it
+        run_git(["config", "extensions.worktreeConfig", "true"], cwd=path)
+
+
+def set_worktree_name(name: str, path: Path):
+    """
+    Store worktree name in the worktree's config.
+
+    This is useful for detached worktrees where the branch name is not available.
+    Uses --worktree flag to ensure config is stored per-worktree, not globally.
+
+    Args:
+        name: Worktree name to store
+        path: Path to the worktree
+    """
+    # Enable worktree config extension if not already enabled
+    enable_worktree_config(path)
+    # Set the worktree-specific config
+    run_git(["config", "--worktree", "worktree.name", name], cwd=path)
+
+
+def get_worktree_name(path: Path) -> Optional[str]:
+    """
+    Get worktree name from the worktree's config.
+
+    Args:
+        path: Path to the worktree
+
+    Returns:
+        Worktree name if set, None otherwise
+    """
+    result = run_git(["config", "--worktree", "worktree.name"], cwd=path, check=False)
+    if result.returncode == 0:
+        return result.stdout.strip()
+    return None

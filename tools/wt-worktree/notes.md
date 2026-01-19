@@ -154,6 +154,22 @@ wt-worktree/
    - Tests: Added 6 comprehensive tests covering all options and edge cases
    - Lesson: When implementing operations that process multiple items, use warning/info functions instead of error() to avoid early exit
 
+9. **Detached Worktree Name Preservation**
+   - Problem: Multiple detached worktrees all showed as "(Detached)" in lists, making them indistinguishable
+   - Problem: Couldn't switch to detached worktrees by the name given during `wt switch -c <name> --detached`
+   - Solution:
+     - Store user-given names in worktree-specific git config using `git config --worktree worktree.name <name>`
+     - Retrieve stored names when listing worktrees
+     - Enable `extensions.worktreeConfig` to support per-worktree config
+   - Implementation Details:
+     - Added `enable_worktree_config()`, `set_worktree_name()`, and `get_worktree_name()` functions in git.py
+     - Modified `create_worktree()` to store names for detached worktrees
+     - Modified `list_worktrees()` to retrieve stored names or fallback to `(detached-<commit>)`
+     - Fixed base branch selection: detached worktrees now use HEAD instead of default_base
+   - Key Insight: Git's `--worktree` config flag requires `extensions.worktreeConfig` to be enabled first
+   - Tests: Added 6 comprehensive tests for detached worktree creation, listing, switching, running commands, and deletion
+   - Lesson: Per-worktree config in git requires enabling the worktreeConfig extension, and is the right way to store worktree-specific metadata
+
 ### Future Improvements
 
 1. **Increase CLI Test Coverage**: Add more edge case tests for CLI commands

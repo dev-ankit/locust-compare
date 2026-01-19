@@ -36,11 +36,17 @@ class WorktreeManager:
             except git.GitError:
                 wt["message"] = ""
 
-            # Extract worktree name from branch
+            # Extract worktree name from branch or config
             if wt.get("branch"):
                 wt["name"] = self.config.extract_worktree_name(wt["branch"])
             else:
-                wt["name"] = "(detached)"
+                # For detached worktrees, try to get name from git config
+                stored_name = git.get_worktree_name(wt["path"])
+                if stored_name:
+                    wt["name"] = stored_name
+                else:
+                    # Fallback: use commit hash as identifier
+                    wt["name"] = f"(detached-{wt['commit'][:7]})"
 
         return worktrees
 
@@ -79,7 +85,7 @@ class WorktreeManager:
         """
         worktrees = self.list_worktrees()
 
-        # Try exact match on name first
+        # Try exact match on name first (works for both regular and detached worktrees)
         for wt in worktrees:
             if wt.get("name") == name:
                 return wt
@@ -162,13 +168,22 @@ class WorktreeManager:
 
         # Determine base branch
         if base is None:
-            base = self.config.get("default_base")
+            # For detached worktrees, use HEAD by default (not default_base)
+            # default_base is meant for creating new branches, not detached worktrees
+            if detached:
+                base = "HEAD"
+            else:
+                base = self.config.get("default_base")
 
         # Create worktree
         try:
             git.add_worktree(wt_path, branch, create_branch, base, detached, self.repo_root)
         except git.GitError as e:
             raise git.GitError(f"Failed to create worktree: {e}")
+
+        # Store worktree name in config if detached (so we can find it later)
+        if detached:
+            git.set_worktree_name(name, wt_path)
 
         # Configure push remote if not detached
         if not detached and create_branch:
