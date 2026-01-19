@@ -105,6 +105,7 @@ Switch to a worktree, optionally creating it.
 wt switch <name>                    # Switch to existing worktree
 wt switch -c <name>                 # Create and switch
 wt switch -c <name> -b <base>       # Create from specific base
+wt switch -c <name> --detached      # Create detached worktree
 wt switch -                         # Switch to previous worktree
 wt switch ^                         # Switch to default worktree
 ```
@@ -121,6 +122,9 @@ wt switch -c feat
 # Create from specific base branch
 wt switch -c hotfix -b origin/release-1.0
 
+# Create detached worktree (no branch, useful for experiments)
+wt switch -c experiment --detached
+
 # Toggle between worktrees
 wt switch feat
 wt switch other
@@ -128,6 +132,23 @@ wt switch -  # Back to feat
 
 # Return to main worktree
 wt switch ^
+```
+
+**Detached Worktrees:**
+
+Detached worktrees are not on any branch - they point directly to a commit. They're useful for temporary work, experiments, or reviewing specific commits without affecting any branches. Each detached worktree preserves the name you give it, so you can easily list, switch to, and manage multiple detached worktrees:
+
+```bash
+# Create multiple detached worktrees
+wt switch -c review-pr-123 --detached
+wt switch -c experiment-new-arch --detached
+
+# List shows each with its unique name (not generic "detached")
+wt list
+
+# Switch between them using their names
+wt switch review-pr-123
+wt run experiment-new-arch "pytest"
 ```
 
 ### `wt list`

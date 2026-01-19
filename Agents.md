@@ -23,4 +23,31 @@ Do NOT include full copies of code that you fetched as part of your investigatio
 
 After everything is done update the root README.md with the tool's information
 
+## Running Tests
+
+**First time setup:**
+```bash
+cd tools/<tool-name>
+uv pip install -e ".[dev]"  # Install with dev dependencies
+```
+
+**Run tests:**
+```bash
+uv run pytest tests/ -v              # Verbose output
+uv run pytest tests/ -v --cov=<pkg>  # With coverage (if configured in pyproject.toml)
+uv run pytest tests/test_foo.py::test_bar -v  # Run specific test
+```
+
+**Note:** Tests in this repo use real operations (not mocks) and temporary directories. If a test fails, check the error output for temp paths.
+
+## Workflow Tips
+
+1. **Always cd to tool directory first**: `cd tools/<tool-name>` before running commands
+2. **Check pyproject.toml**: Review dependencies, scripts, and pytest config
+3. **Read existing tests**: Understand test patterns and fixtures before adding new ones
+4. **Use TodoWrite tool**: Track progress on multi-step tasks
+5. **Document learnings**: Add to notes.md as you discover gotchas or solutions
+6. **Test as you go**: Run tests after each significant change, not just at the end
+7. **Git config in tests**: Disable GPG signing in test fixtures: `git config commit.gpgsign false`
+
 

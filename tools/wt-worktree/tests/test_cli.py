@@ -307,3 +307,131 @@ def test_sync_command_invalid_args(runner, initialized_repo):
     result = runner.invoke(cli, ["sync", "--exclude", "feat1"])
     assert result.exit_code == 2
     assert "requires --all" in result.output
+
+
+def test_detached_worktree_create(runner, initialized_repo, no_prompt):
+    """Test creating a detached worktree."""
+    result = runner.invoke(cli, ["switch", "-c", "mydetached", "--detached"])
+    assert result.exit_code == 0
+    # Worktree should be created
+    from wt.config import Config
+    from wt.worktree import WorktreeManager
+    config = Config(initialized_repo)
+    manager = WorktreeManager(config)
+    wt = manager.find_worktree_by_name("mydetached")
+    assert wt is not None
+    assert wt["name"] == "mydetached"
+    assert wt.get("branch") is None  # detached worktrees have no branch
+
+
+def test_detached_worktree_list(runner, initialized_repo, no_prompt):
+    """Test listing detached worktrees shows custom names."""
+    # Create two detached worktrees
+    runner.invoke(cli, ["switch", "-c", "detached1", "--detached"])
+    runner.invoke(cli, ["switch", "-c", "detached2", "--detached"])
+
+    result = runner.invoke(cli, ["list"])
+    assert result.exit_code == 0
+    # Both should show with their custom names, not "(detached)"
+    assert "detached1" in result.output
+    assert "detached2" in result.output
+    # Should not show generic "(detached)" for named worktrees
+    lines = result.output.split('\n')
+    detached_lines = [l for l in lines if "detached1" in l or "detached2" in l]
+    assert len(detached_lines) == 2
+
+
+def test_detached_worktree_switch(runner, initialized_repo, no_prompt):
+    """Test switching to a detached worktree by its name."""
+    # Create a detached worktree
+    runner.invoke(cli, ["switch", "-c", "mydetached", "--detached"])
+
+    # Switch to it by name
+    result = runner.invoke(cli, ["switch", "mydetached"])
+    assert result.exit_code == 0
+    assert "mydetached" in result.output
+
+
+def test_detached_worktree_run(runner, initialized_repo, no_prompt):
+    """Test running commands in a detached worktree."""
+    # Create a detached worktree
+    runner.invoke(cli, ["switch", "-c", "mydetached", "--detached"])
+
+    # Run a command in it
+    result = runner.invoke(cli, ["run", "mydetached", "echo hello"])
+    assert result.exit_code == 0
+
+
+def test_multiple_detached_worktrees_unique_names(runner, initialized_repo, no_prompt):
+    """Test that multiple detached worktrees can coexist with unique names."""
+    # Create multiple detached worktrees
+    runner.invoke(cli, ["switch", "-c", "det1", "--detached"])
+    runner.invoke(cli, ["switch", "-c", "det2", "--detached"])
+    runner.invoke(cli, ["switch", "-c", "det3", "--detached"])
+
+    # List should show all three with their unique names
+    result = runner.invoke(cli, ["list"])
+    assert result.exit_code == 0
+    assert "det1" in result.output
+    assert "det2" in result.output
+    assert "det3" in result.output
+
+    # Each should be findable by name
+    from wt.config import Config
+    from wt.worktree import WorktreeManager
+    config = Config(initialized_repo)
+    manager = WorktreeManager(config)
+
+    for name in ["det1", "det2", "det3"]:
+        wt = manager.find_worktree_by_name(name)
+        assert wt is not None
+        assert wt["name"] == name
+
+
+def test_detached_worktree_delete(runner, initialized_repo, no_prompt):
+    """Test deleting a detached worktree by its name."""
+    # Create a detached worktree
+    runner.invoke(cli, ["switch", "-c", "mydetached", "--detached"])
+
+    # Delete it by name
+    result = runner.invoke(cli, ["delete", "mydetached", "--force"])
+    assert result.exit_code == 0
+
+    # Verify it's gone
+    from wt.config import Config
+    from wt.worktree import WorktreeManager
+    config = Config(initialized_repo)
+    manager = WorktreeManager(config)
+    wt = manager.find_worktree_by_name("mydetached")
+    assert wt is None
+
+
+def test_detached_worktree_backward_compatibility(runner, initialized_repo, no_prompt):
+    """Test that detached worktrees created without stored name still work."""
+    # Create a detached worktree using raw git (simulates old behavior)
+    from wt import git
+    from wt.config import Config
+    from wt.worktree import WorktreeManager
+
+    config = Config(initialized_repo)
+    wt_path = config.resolve_path_pattern("legacy", "feature/legacy")
+    git.add_worktree(wt_path, "legacy", create_branch=False, base="HEAD",
+                     detached=True, repo_path=initialized_repo)
+
+    # Note: Not calling set_worktree_name - simulates old behavior
+
+    # List should infer name from path
+    manager = WorktreeManager(config)
+    worktrees = manager.list_worktrees()
+    legacy_wt = None
+    for wt in worktrees:
+        if "legacy" in wt["name"]:
+            legacy_wt = wt
+            break
+
+    assert legacy_wt is not None
+    assert legacy_wt["name"] == "legacy"  # Inferred from path
+
+    # Should be able to find it by inferred name
+    found_wt = manager.find_worktree_by_name("legacy")
+    assert found_wt is not None
