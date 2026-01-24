@@ -57,7 +57,7 @@ def prompt_choice(message: str, choices: list, default: Optional[str] = None) ->
         print(f"  {i}. {choice}")
 
     try:
-        response = input("Enter choice (1-{}): ".format(len(choices))).strip()
+        response = input(f"Enter choice (1-{len(choices)}): ").strip()
         if not response:
             return default
 

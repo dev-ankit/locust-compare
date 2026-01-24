@@ -1,10 +1,12 @@
 """Unit tests for utility functions."""
-import pytest
+
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from compare_runs import _as_float, pct_change, diff, format_number
+from compare_runs import _as_float, diff, format_number, pct_change
 
 
 class TestAsFloat:

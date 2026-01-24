@@ -15,7 +15,7 @@ jobs:
           - locust-compare
           - config-utils
           - wt-worktree
-        # Just test for 3.12 
+        # Just test for 3.12
         # uncomment if you want to test for all versions
         # python-version: ["3.10", "3.11", "3.12"]
         python-version: ["3.12"]
@@ -34,4 +34,3 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .[dev]
         python -m pytest -v
-

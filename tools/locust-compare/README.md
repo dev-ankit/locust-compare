@@ -88,11 +88,13 @@ Exit code is `0` on success and `1` on error.
 ## What It Compares
 
 From CSV `report.csv` (Aggregated and each request row):
+
 - Requests/s, Request Count, Failure Count
 - Average, Median, Min, Max Response Time
 - Percentiles: 50%, 66%, 75%, 80%, 90%, 95%, 98%, 99%, 99.9%, 99.99%, 100% (if present)
 
 From HTML feature pages (last entry in `window.templateArgs.history`):
+
 - Requests/s (`current_rps`)
 - Average Response Time (`total_avg_response_time`)
 - 50% (`response_time_percentile_0.5`)
@@ -103,7 +105,6 @@ If a metric is not available for an item, it is shown as `-`.
 ## Example Output (truncated)
 
 <img width="598" height="255" alt="image" src="https://github.com/user-attachments/assets/f5394045-6d1e-498e-aa3f-624928ec70a7" />
-
 
 ## Markdown Output Example
 
@@ -122,10 +123,10 @@ The `-o markdown` flag produces markdown tables with emoji indicators for verdic
 ```
 
 Verdict emojis:
-- ✅ Better performance
-- ❌ Worse performance  
-- ➖ No change
 
+- ✅ Better performance
+- ❌ Worse performance
+- ➖ No change
 
 ## JSON Schema
 

@@ -1,12 +1,15 @@
 """Core worktree operations."""
 
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
+
 from . import git
 from .config import Config
 from .prompts import confirm, error, info, warning
 
 EXIT_ERROR = 1
+
+
 class WorktreeManager:
     """Manages git worktree operations."""
 
@@ -41,7 +44,7 @@ class WorktreeManager:
         if pattern == "../{repo}-{name}":
             expected_prefix = f"{repo_name}-"
             if wt_path.name.startswith(expected_prefix):
-                return wt_path.name[len(expected_prefix):]
+                return wt_path.name[len(expected_prefix) :]
 
         # Try pattern: ../{name}
         elif pattern == "../{name}":
@@ -94,13 +97,13 @@ class WorktreeManager:
             Worktree dict or None
         """
         import os
+
         cwd = Path(os.getcwd())
 
         worktrees = self.list_worktrees()
         for wt in worktrees:
             try:
-                if cwd.resolve() == wt["path"].resolve() or \
-                   cwd.is_relative_to(wt["path"]):
+                if cwd.resolve() == wt["path"].resolve() or cwd.is_relative_to(wt["path"]):
                     return wt
             except (ValueError, OSError):
                 # is_relative_to can raise on some systems
@@ -165,8 +168,9 @@ class WorktreeManager:
 
         return None
 
-    def create_worktree(self, name: str, base: Optional[str] = None,
-                       detached: bool = False) -> Path:
+    def create_worktree(
+        self, name: str, base: Optional[str] = None, detached: bool = False
+    ) -> Path:
         """
         Create a new worktree.
 
@@ -198,8 +202,7 @@ class WorktreeManager:
         # Check if path already exists
         if wt_path.exists():
             raise git.GitError(
-                f"Path {wt_path} already exists. "
-                f"Please remove it or choose a different name."
+                f"Path {wt_path} already exists. " f"Please remove it or choose a different name."
             )
 
         # Determine base branch
@@ -244,8 +247,7 @@ class WorktreeManager:
 
         return wt_path
 
-    def delete_worktree(self, name: str, force: bool = False,
-                       keep_branch: bool = False) -> bool:
+    def delete_worktree(self, name: str, force: bool = False, keep_branch: bool = False) -> bool:
         """
         Delete a worktree.
 
@@ -282,8 +284,9 @@ class WorktreeManager:
             error(
                 f"Worktree '{name}' has uncommitted changes:\n{status}\n"
                 "use --force to delete anyway",
-                EXIT_ERROR)
-            return
+                EXIT_ERROR,
+            )
+            return None
 
         # Check for unpushed commits
         if not force and branch:
@@ -294,15 +297,14 @@ class WorktreeManager:
                     if ahead > 0:
                         # Get list of unpushed commits
                         result = git.run_git(
-                            ["log", "--oneline", f"{upstream}..{branch}"],
-                            cwd=self.repo_root
+                            ["log", "--oneline", f"{upstream}..{branch}"], cwd=self.repo_root
                         )
                         commits = result.stdout.strip()
 
                         if not confirm(
                             f"Worktree '{name}' has {ahead} unpushed commit(s):\n{commits}\n\n"
                             "Delete anyway?",
-                            default=False
+                            default=False,
                         ):
                             return False
                 except git.GitError:
@@ -352,7 +354,7 @@ class WorktreeManager:
         if git.has_uncommitted_changes(wt_path):
             files = git.get_status_short(wt_path)
             status["uncommitted_files"] = files
-            status["uncommitted_count"] = len(files.strip().split('\n'))
+            status["uncommitted_count"] = len(files.strip().split("\n"))
 
         # Check ahead/behind status
         if branch:
@@ -410,8 +412,8 @@ class WorktreeManager:
             upstream = git.get_upstream_branch(branch, self.repo_root)
             if upstream:
                 # Parse remote name from upstream (e.g., "origin/feature/foo" -> "origin", "feature/foo")
-                remote = upstream.split('/')[0]
-                remote_branch = '/'.join(upstream.split('/')[1:])
+                remote = upstream.split("/")[0]
+                remote_branch = "/".join(upstream.split("/")[1:])
 
                 if not git.remote_branch_exists(remote_branch, remote, self.repo_root):
                     to_remove.append((name, "remote branch deleted"))
@@ -480,7 +482,7 @@ class WorktreeManager:
             return result
 
         # Parse remote from upstream (e.g., "origin/feature/foo" -> "origin", "feature/foo")
-        remote_parts = upstream.split('/', 1)
+        remote_parts = upstream.split("/", 1)
         if len(remote_parts) < 2:
             result["error"] = f"invalid upstream: {upstream}"
             return result
@@ -561,8 +563,9 @@ class WorktreeManager:
 
         return result
 
-    def sync_worktrees(self, worktree_names: Optional[List[str]] = None,
-                      rebase: bool = False) -> Tuple[List[dict], List[dict]]:
+    def sync_worktrees(
+        self, worktree_names: Optional[List[str]] = None, rebase: bool = False
+    ) -> Tuple[List[dict], List[dict]]:
         """
         Sync multiple worktrees with their upstream branches.
 
@@ -606,20 +609,19 @@ class WorktreeManager:
             result = self.sync_worktree(wt, rebase)
 
             if result["success"]:
-                succeeded.append({
-                    "name": wt_name,
-                    "message": result["message"]
-                })
+                succeeded.append({"name": wt_name, "message": result["message"]})
                 # Print success message
-                for line in result["message"].split('\n'):
+                for line in result["message"].split("\n"):
                     if line:
                         info(f"[{wt_name}] {line}")
             else:
-                failed.append({
-                    "name": wt_name,
-                    "error": result["error"],
-                    "stashed": result.get("stashed", False)
-                })
+                failed.append(
+                    {
+                        "name": wt_name,
+                        "error": result["error"],
+                        "stashed": result.get("stashed", False),
+                    }
+                )
                 # Print error message (without exiting)
                 error_msg = result["error"]
                 if "conflict" in error_msg:

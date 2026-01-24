@@ -1,11 +1,13 @@
 """Integration tests for load_report function."""
-import pytest
+
 import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from compare_runs import load_report, Row
+from compare_runs import load_report
 
 
 class TestLoadReport:
@@ -67,14 +69,14 @@ class TestLoadReport:
                 load_report(Path(f.name))
 
     def test_load_empty_csv(self, empty_csv_content):
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(empty_csv_content)
             f.flush()
             rows = load_report(Path(f.name))
             assert rows == []
 
     def test_load_handles_malformed_values(self, malformed_csv_content):
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(malformed_csv_content)
             f.flush()
             rows = load_report(Path(f.name))
@@ -106,7 +108,7 @@ class TestLoadReportEdgeCases:
         content = """Type,Name,Request Count,CustomField,Average Response Time
 GET,/api/test,100,ignored,50.0
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(content)
             f.flush()
             rows = load_report(Path(f.name))
@@ -118,7 +120,7 @@ GET,/api/test,100,ignored,50.0
         content = """Type,Name,Request Count,Average Response Time
 GET,  /api/test  ,  100  ,  50.5
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(content)
             f.flush()
             rows = load_report(Path(f.name))
@@ -130,7 +132,7 @@ GET,  /api/test  ,  100  ,  50.5
         content = """Type,Name,Request Count
 GET,/api/test,100
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(content)
             f.flush()
             rows = load_report(Path(f.name))

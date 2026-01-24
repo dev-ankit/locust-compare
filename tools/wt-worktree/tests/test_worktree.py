@@ -1,8 +1,6 @@
 """Tests for worktree operations."""
 
 import pytest
-from pathlib import Path
-
 from wt import git
 from wt.config import Config
 from wt.worktree import WorktreeManager

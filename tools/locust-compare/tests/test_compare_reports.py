@@ -1,11 +1,11 @@
 """Integration tests for compare_reports function."""
-import pytest
-import sys
+
 import json
+import sys
 import tempfile
 from pathlib import Path
-from io import StringIO
-from unittest.mock import patch
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from compare_runs import compare_reports
@@ -100,8 +100,8 @@ class TestCompareReportsHuman:
         output = captured.out
 
         # Should NOT have verdict column header
-        lines = output.split('\n')
-        header_line = [l for l in lines if 'Metric' in l and 'Base' in l][0]
+        lines = output.split("\n")
+        header_line = [l for l in lines if "Metric" in l and "Base" in l][0]
         assert "Verdict" not in header_line
 
     def test_human_output_colorize(self, temp_test_dir, temp_test_dir_v2, capsys):
@@ -133,7 +133,10 @@ class TestCompareReportsEdgeCases:
     def test_compare_with_missing_endpoint(self, sample_csv_content, sample_csv_content_v2, capsys):
         """Test comparison when an endpoint exists only in one report."""
         # Create CSV with extra endpoint in base
-        base_csv = sample_csv_content + "DELETE,/api/delete,10,0,50,55,20,100,1.0,5.0,0.0,50,55,60,65,75,85,95,100,150,200,100\n"
+        base_csv = (
+            sample_csv_content
+            + "DELETE,/api/delete,10,0,50,55,20,100,1.0,5.0,0.0,50,55,60,65,75,85,95,100,150,200,100\n"
+        )
 
         with tempfile.TemporaryDirectory() as base_dir, tempfile.TemporaryDirectory() as curr_dir:
             base_path = Path(base_dir) / "report.csv"
@@ -156,7 +159,10 @@ class TestCompareReportsEdgeCases:
     def test_compare_with_new_endpoint(self, sample_csv_content, sample_csv_content_v2, capsys):
         """Test comparison when a new endpoint appears in current."""
         # Create CSV with extra endpoint in current
-        curr_csv = sample_csv_content_v2 + "DELETE,/api/new,20,0,40,45,15,90,1.2,10.0,0.0,40,45,50,55,65,75,85,95,140,190,90\n"
+        curr_csv = (
+            sample_csv_content_v2
+            + "DELETE,/api/new,20,0,40,45,15,90,1.2,10.0,0.0,40,45,50,55,65,75,85,95,140,190,90\n"
+        )
 
         with tempfile.TemporaryDirectory() as base_dir, tempfile.TemporaryDirectory() as curr_dir:
             base_path = Path(base_dir) / "report.csv"
@@ -191,6 +197,7 @@ GET,/api/test,100
 """)
             # Copy the HTML file
             import shutil
+
             for html_file in temp_dir_with_html.glob("*.html"):
                 if html_file.name != "htmlpublisher-wrapper.html":
                     shutil.copy(html_file, other / html_file.name)
@@ -214,6 +221,7 @@ GET,/api/test,100
 """)
             # Copy the HTML file
             import shutil
+
             for html_file in temp_dir_with_html.glob("*.html"):
                 if html_file.name != "htmlpublisher-wrapper.html":
                     shutil.copy(html_file, other / html_file.name)

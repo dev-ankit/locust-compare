@@ -48,7 +48,6 @@ Or install in editable mode for development:
 pip install -e .
 ```
 
-
 ## Usage
 
 ### Capture Environment Variables
@@ -142,6 +141,7 @@ Perform set operations on two YAML configuration files. All operations output va
 #### Examples
 
 **file1.yml:**
+
 ```yaml
 database: postgres
 port: 5432
@@ -149,6 +149,7 @@ debug: true
 ```
 
 **file2.yml:**
+
 ```yaml
 database: postgres
 port: 3306
@@ -156,6 +157,7 @@ logging: verbose
 ```
 
 **Find common configuration (intersect with key-values):**
+
 ```bash
 config-utils intersect file1.yml file2.yml
 # Output:
@@ -163,6 +165,7 @@ config-utils intersect file1.yml file2.yml
 ```
 
 **Find common keys regardless of values:**
+
 ```bash
 config-utils intersect file1.yml file2.yml --compare keys
 # Output:
@@ -171,6 +174,7 @@ config-utils intersect file1.yml file2.yml --compare keys
 ```
 
 **Find all unique configuration (union):**
+
 ```bash
 config-utils union file1.yml file2.yml
 # Output:
@@ -181,6 +185,7 @@ config-utils union file1.yml file2.yml
 ```
 
 **Find what's in file1 but not file2 (diff):**
+
 ```bash
 config-utils diff file1.yml file2.yml
 # Output:
@@ -189,6 +194,7 @@ config-utils diff file1.yml file2.yml
 ```
 
 **Find what's in file2 but not file1 (rdiff):**
+
 ```bash
 config-utils rdiff file1.yml file2.yml
 # Output:
@@ -199,6 +205,7 @@ config-utils rdiff file1.yml file2.yml
 **Nested comparison with depth:**
 
 **nested1.yml:**
+
 ```yaml
 database:
   host: localhost
@@ -208,6 +215,7 @@ app:
 ```
 
 **nested2.yml:**
+
 ```yaml
 database:
   host: localhost
@@ -295,6 +303,7 @@ python -m pytest tests/test_set_operations.py::TestUnionCommand::test_union_kv_m
 ### Test Coverage
 
 The test suite covers:
+
 - All 5 set operations (union, intersect, diff, rdiff, symdiff)
 - Both comparison modes (keys and kv)
 - All depth levels (0, 1, 2+)

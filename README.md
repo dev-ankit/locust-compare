@@ -17,6 +17,7 @@ Option 1: uv tool install
 Each tool can be installed independently using `uvx` directly from GitHub:
 
 For example:
+
 ```bash
 # Install locust-compare
 uv tool install 'git+https://github.com/dev-ankit/python-tools.git#subdirectory=tools/locust-compare'
@@ -29,6 +30,7 @@ uv tool install 'git+https://github.com/dev-ankit/python-tools.git#subdirectory=
 ```
 
 After installation, you can run from anywhere:
+
 ```bash
 locust-compare <base_dir> <current_dir>
 config-utils capture-env

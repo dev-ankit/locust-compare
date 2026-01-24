@@ -1,6 +1,5 @@
 """Shell integration code generation."""
 
-
 BASH_ZSH_WRAPPER = """
 # wt shell integration for {shell}
 wt() {{
@@ -67,13 +66,9 @@ def generate_shell_init(shell: str) -> str:
 
     if shell in ("bash", "zsh"):
         return BASH_ZSH_WRAPPER.format(shell=shell).strip()
-    elif shell == "fish":
+    if shell == "fish":
         return FISH_WRAPPER.strip()
-    else:
-        raise ValueError(
-            f"Unsupported shell: {shell}\n"
-            f"Supported shells: bash, zsh, fish"
-        )
+    raise ValueError(f"Unsupported shell: {shell}\n" f"Supported shells: bash, zsh, fish")
 
 
 def get_supported_shells() -> list:

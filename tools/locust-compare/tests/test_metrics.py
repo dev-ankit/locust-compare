@@ -1,5 +1,5 @@
 """Unit tests for metric direction and verdict functions."""
-import pytest
+
 import sys
 from pathlib import Path
 
