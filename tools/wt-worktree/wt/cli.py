@@ -1,8 +1,8 @@
 """CLI commands for wt."""
 
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -10,10 +10,9 @@ import click
 
 from . import git
 from .config import Config, ConfigError
-from .worktree import WorktreeManager
-from .prompts import confirm, error, info, success, warning
+from .prompts import error, info, success, warning
 from .shell import generate_shell_init, get_supported_shells
-
+from .worktree import WorktreeManager
 
 # Exit codes
 EXIT_SUCCESS = 0
@@ -58,8 +57,12 @@ def cli(ctx: Context):
 
 @cli.command()
 @click.option("--prefix", default="feature", help="Branch prefix for new worktrees")
-@click.option("--path", "path_pattern", default="../{repo}-{name}",
-              help="Path pattern for worktree directories")
+@click.option(
+    "--path",
+    "path_pattern",
+    default="../{repo}-{name}",
+    help="Path pattern for worktree directories",
+)
 @pass_context
 def init(ctx: Context, prefix: str, path_pattern: str):
     """Create or update wt configuration with custom defaults."""
@@ -88,11 +91,18 @@ def init(ctx: Context, prefix: str, path_pattern: str):
 @click.option("-c", "--create", is_flag=True, help="Create worktree if it doesn't exist")
 @click.option("-b", "--base", help="Base branch for new worktree")
 @click.option("-d", "--detached", is_flag=True, help="Create in detached HEAD state")
-@click.option("--shell-helper", is_flag=True, hidden=True,
-              help="Internal flag for shell integration")
+@click.option(
+    "--shell-helper", is_flag=True, hidden=True, help="Internal flag for shell integration"
+)
 @pass_context
-def switch(ctx: Context, name: Optional[str], create: bool, base: Optional[str],
-          detached: bool, shell_helper: bool):
+def switch(
+    ctx: Context,
+    name: Optional[str],
+    create: bool,
+    base: Optional[str],
+    detached: bool,
+    shell_helper: bool,
+):
     """Switch to a worktree, optionally creating it."""
     if not ctx.repo_root or not ctx.manager:
         error("Not in a git repository.", EXIT_GIT_ERROR)
@@ -180,7 +190,7 @@ def switch(ctx: Context, name: Optional[str], create: bool, base: Optional[str],
             f"Worktree '{name}' not found\n"
             f"Available worktrees: {', '.join(available)}\n"
             f"Use 'wt switch -c {name}' to create it.",
-            EXIT_NOT_FOUND
+            EXIT_NOT_FOUND,
         )
 
 
@@ -208,7 +218,7 @@ def list_cmd(ctx: Context, name_only: bool):
             try:
                 changed = git.get_changed_files_in_commit(commit, wt["path"])
                 if changed:
-                    for line in changed.strip().split('\n'):
+                    for line in changed.strip().split("\n"):
                         if line:
                             print(f"  {line}")
                 else:
@@ -324,7 +334,7 @@ def status(ctx: Context):
 
         # Show uncommitted files
         if st["uncommitted_files"]:
-            for line in st["uncommitted_files"].strip().split('\n')[:5]:
+            for line in st["uncommitted_files"].strip().split("\n")[:5]:
                 print(f"  {line}")
             if st["uncommitted_count"] > 5:
                 print(f"  ... and {st['uncommitted_count'] - 5} more")
@@ -344,7 +354,7 @@ def status(ctx: Context):
                     parts.append(f"↓{behind}")
                 print(f"  {' '.join(parts)} {st['upstream']}")
         elif wt.get("branch"):
-            print(f"  (no upstream)")
+            print("  (no upstream)")
 
         print()
 
@@ -401,11 +411,7 @@ def run(ctx: Context, name: str, command: str):
 
     # Run command
     try:
-        result = subprocess.run(
-            command,
-            cwd=wt_path,
-            shell=True
-        )
+        result = subprocess.run(command, cwd=wt_path, shell=True, check=False)
         sys.exit(result.returncode)
     except Exception as e:
         error(f"Failed to run command: {e}", EXIT_ERROR)
@@ -435,8 +441,7 @@ def clean(ctx: Context, dry_run: bool, force: bool):
 @click.option("--list", "list_all", is_flag=True, help="Show all configuration")
 @click.option("--edit", is_flag=True, help="Open config file in $EDITOR")
 @pass_context
-def config(ctx: Context, key: Optional[str], value: Optional[str],
-          list_all: bool, edit: bool):
+def config(ctx: Context, key: Optional[str], value: Optional[str], list_all: bool, edit: bool):
     """View or modify configuration."""
     if not ctx.config:
         ctx.config = Config(None)
@@ -452,7 +457,7 @@ def config(ctx: Context, key: Optional[str], value: Optional[str],
 
         # Open in editor
         editor = os.environ.get("EDITOR", "vi")
-        subprocess.run([editor, str(config_path)])
+        subprocess.run([editor, str(config_path)], check=False)
         return
 
     if list_all:
@@ -493,8 +498,9 @@ def config(ctx: Context, key: Optional[str], value: Optional[str],
 @click.option("--exclude", help="Comma-separated list of worktrees to skip")
 @click.option("--rebase", is_flag=True, help="Rebase onto default base after pull")
 @pass_context
-def sync(ctx: Context, sync_all: bool, include: Optional[str],
-         exclude: Optional[str], rebase: bool):
+def sync(
+    ctx: Context, sync_all: bool, include: Optional[str], exclude: Optional[str], rebase: bool
+):
     """Sync worktrees with their upstream branches."""
     if not ctx.repo_root or not ctx.manager:
         error("Not in a git repository", EXIT_GIT_ERROR)
@@ -545,7 +551,11 @@ def sync(ctx: Context, sync_all: bool, include: Optional[str],
 
         # Print conflict details
         if any("conflict" in f["error"] for f in failed):
-            info("Conflicts in {} worktree(s):".format(len([f for f in failed if "conflict" in f["error"]])))
+            info(
+                "Conflicts in {} worktree(s):".format(
+                    len([f for f in failed if "conflict" in f["error"]])
+                )
+            )
             for f in failed:
                 if "conflict" in f["error"]:
                     conflict_type = f["error"].replace("_", " ")

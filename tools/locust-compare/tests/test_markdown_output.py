@@ -1,13 +1,12 @@
 """Tests for markdown output functionality."""
-import pytest
-import sys
+
 import json
+import sys
 import tempfile
 from pathlib import Path
-from io import StringIO
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from compare_runs import compare_reports, _verdict_to_emoji
+from compare_runs import _verdict_to_emoji, compare_reports
 
 
 class TestMarkdownOutput:
@@ -61,7 +60,9 @@ class TestMarkdownOutput:
 
     def test_markdown_output_includes_emojis(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown output includes emoji indicators."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=True)
+        compare_reports(
+            temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=True
+        )
 
         captured = capsys.readouterr()
         output = captured.out
@@ -71,14 +72,16 @@ class TestMarkdownOutput:
 
     def test_markdown_output_no_verdict(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test markdown output without verdict column."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=False)
+        compare_reports(
+            temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=False
+        )
 
         captured = capsys.readouterr()
         output = captured.out
 
         # Should NOT have Verdict column in tables
-        lines = output.split('\n')
-        header_lines = [l for l in lines if 'Metric' in l and '|' in l]
+        lines = output.split("\n")
+        header_lines = [l for l in lines if "Metric" in l and "|" in l]
         assert len(header_lines) > 0
         for header in header_lines:
             assert "Verdict" not in header
@@ -97,24 +100,26 @@ class TestMarkdownOutput:
 
     def test_markdown_table_format(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that markdown tables are properly formatted."""
-        compare_reports(temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=True)
+        compare_reports(
+            temp_test_dir, temp_test_dir_v2, output_format="markdown", show_verdict=True
+        )
 
         captured = capsys.readouterr()
         output = captured.out
-        lines = output.split('\n')
+        lines = output.split("\n")
 
         # Find table lines
-        table_lines = [l for l in lines if l.startswith('|') and 'Metric' in l]
+        table_lines = [l for l in lines if l.startswith("|") and "Metric" in l]
         assert len(table_lines) > 0
 
         # Check that separator line follows header
         for i, line in enumerate(lines):
-            if 'Metric' in line and line.startswith('|'):
+            if "Metric" in line and line.startswith("|"):
                 # Next line should be separator
                 if i + 1 < len(lines):
                     next_line = lines[i + 1]
-                    assert '---' in next_line
-                    assert next_line.startswith('|')
+                    assert "---" in next_line
+                    assert next_line.startswith("|")
 
     def test_markdown_with_html_features(self, temp_dir_with_html, capsys):
         """Test markdown output includes HTML features section."""
@@ -126,6 +131,7 @@ GET,/api/test,100
 """)
             # Copy the HTML file
             import shutil
+
             for html_file in temp_dir_with_html.glob("*.html"):
                 if html_file.name != "htmlpublisher-wrapper.html":
                     shutil.copy(html_file, other / html_file.name)
@@ -177,7 +183,9 @@ class TestMarkdownCompatibility:
 
     def test_color_output_still_works(self, temp_test_dir, temp_test_dir_v2, capsys):
         """Test that colorized output still works."""
-        result = compare_reports(temp_test_dir, temp_test_dir_v2, output_format="text", colorize=True)
+        result = compare_reports(
+            temp_test_dir, temp_test_dir_v2, output_format="text", colorize=True
+        )
         assert result == 0
 
         captured = capsys.readouterr()

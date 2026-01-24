@@ -1,0 +1,74 @@
+# Pre-commit hooks configuration using prek
+# See https://github.com/pre-commit/pre-commit-hooks for more hooks
+
+repos:
+  # Ruff - Fast Python linter and formatter (replaces flake8, isort, black, etc.)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+      # Run the formatter
+      - id: ruff-format
+
+  # Pyright - Astral's type checker
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.390
+    hooks:
+      - id: pyright
+
+  # Pre-commit hooks for general file cleanup
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Prevent giant files from being committed
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      # Check for files that would conflict in case-insensitive filesystems
+      - id: check-case-conflict
+      # Check for merge conflicts
+      - id: check-merge-conflict
+      # Check for debugger imports and py37+ breakpoint()
+      - id: debug-statements
+      # Ensure files end in a newline
+      - id: end-of-file-fixer
+      # Trim trailing whitespace
+      - id: trailing-whitespace
+      # Check YAML files for parseable syntax
+      - id: check-yaml
+      # Check TOML files for parseable syntax
+      - id: check-toml
+      # Check JSON files for parseable syntax
+      - id: check-json
+      # Ensure JSON files are properly formatted
+      - id: pretty-format-json
+        args: ['--autofix', '--no-sort-keys', '--indent=2']
+      # Fix mixed line endings
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      # Check for private keys
+      - id: detect-private-key
+
+  # Check for common security issues
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml']
+        additional_dependencies: ['bandit[toml]']
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.43.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+
+  # Python docstring coverage
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--fail-under=0, --verbose]
+        pass_filenames: false

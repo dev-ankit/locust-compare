@@ -1,12 +1,11 @@
 """Tests for CLI commands."""
 
 import os
+
 import pytest
 from click.testing import CliRunner
-from pathlib import Path
-
-from wt.cli import cli
 from wt import git
+from wt.cli import cli
 
 
 @pytest.fixture
@@ -19,6 +18,7 @@ def runner():
 def initialized_repo(git_repo, tmp_path, monkeypatch):
     """Create a git repo with wt config in temp directory."""
     from wt.config import Config
+
     # Use temp directory for config
     monkeypatch.setenv("WT_CONFIG", str(tmp_path))
 
@@ -173,6 +173,7 @@ def test_commands_from_secondary_worktree(runner, initialized_repo, no_prompt):
 
     # Find the worktree path
     from wt import git
+
     worktrees = git.list_worktrees(initialized_repo)
     feat_worktree = None
     for wt in worktrees:
@@ -316,6 +317,7 @@ def test_detached_worktree_create(runner, initialized_repo, no_prompt):
     # Worktree should be created
     from wt.config import Config
     from wt.worktree import WorktreeManager
+
     config = Config(initialized_repo)
     manager = WorktreeManager(config)
     wt = manager.find_worktree_by_name("mydetached")
@@ -336,7 +338,7 @@ def test_detached_worktree_list(runner, initialized_repo, no_prompt):
     assert "detached1" in result.output
     assert "detached2" in result.output
     # Should not show generic "(detached)" for named worktrees
-    lines = result.output.split('\n')
+    lines = result.output.split("\n")
     detached_lines = [l for l in lines if "detached1" in l or "detached2" in l]
     assert len(detached_lines) == 2
 
@@ -379,6 +381,7 @@ def test_multiple_detached_worktrees_unique_names(runner, initialized_repo, no_p
     # Each should be findable by name
     from wt.config import Config
     from wt.worktree import WorktreeManager
+
     config = Config(initialized_repo)
     manager = WorktreeManager(config)
 
@@ -400,6 +403,7 @@ def test_detached_worktree_delete(runner, initialized_repo, no_prompt):
     # Verify it's gone
     from wt.config import Config
     from wt.worktree import WorktreeManager
+
     config = Config(initialized_repo)
     manager = WorktreeManager(config)
     wt = manager.find_worktree_by_name("mydetached")
@@ -415,8 +419,14 @@ def test_detached_worktree_backward_compatibility(runner, initialized_repo, no_p
 
     config = Config(initialized_repo)
     wt_path = config.resolve_path_pattern("legacy", "feature/legacy")
-    git.add_worktree(wt_path, "legacy", create_branch=False, base="HEAD",
-                     detached=True, repo_path=initialized_repo)
+    git.add_worktree(
+        wt_path,
+        "legacy",
+        create_branch=False,
+        base="HEAD",
+        detached=True,
+        repo_path=initialized_repo,
+    )
 
     # Note: Not calling set_worktree_name - simulates old behavior
 

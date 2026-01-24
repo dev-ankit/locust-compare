@@ -79,6 +79,7 @@ wt init [--prefix <prefix>] [--path <pattern>]
 ```
 
 **Options:**
+
 - `--prefix`: Branch prefix for new worktrees (default: `feature`)
 - `--path`: Path pattern for worktree directories (default: `../{repo}-{name}`)
 
@@ -302,6 +303,7 @@ wt config --edit
 ## Configuration
 
 Configuration is stored in a single TOML file:
+
 - Default location: `~/.wt.toml`
 - Custom location: Set `WT_CONFIG` environment variable to a directory
 

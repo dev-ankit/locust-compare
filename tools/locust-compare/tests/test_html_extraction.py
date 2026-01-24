@@ -1,5 +1,5 @@
 """Tests for HTML template extraction functions."""
-import pytest
+
 import sys
 from pathlib import Path
 

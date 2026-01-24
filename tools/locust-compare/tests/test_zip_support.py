@@ -1,12 +1,14 @@
 """Tests for zip file support."""
-import pytest
+
 import sys
-import zipfile
 import tempfile
+import zipfile
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from compare_runs import _resolve_path, compare_reports, _temp_dirs
+from compare_runs import _resolve_path, _temp_dirs, compare_reports
 
 
 class TestResolvePath:
@@ -140,7 +142,9 @@ class TestCompareReportsWithZip:
             result = compare_reports(temp_test_dir, curr_zip, output_format="json")
             assert result == 0
 
-    def test_zip_with_nested_directory_structure(self, sample_csv_content, sample_csv_content_v2, capsys):
+    def test_zip_with_nested_directory_structure(
+        self, sample_csv_content, sample_csv_content_v2, capsys
+    ):
         """Zip with report inside a subdirectory should work."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_zip = Path(tmpdir) / "base.zip"

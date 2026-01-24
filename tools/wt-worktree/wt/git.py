@@ -1,18 +1,17 @@
 """Git operations wrapper module."""
 
 import subprocess
-import sys
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 
 class GitError(Exception):
     """Raised when a git operation fails."""
-    pass
 
 
-def run_git(args: List[str], cwd: Optional[Path] = None, check: bool = True,
-            capture_output: bool = True) -> subprocess.CompletedProcess:
+def run_git(
+    args: List[str], cwd: Optional[Path] = None, check: bool = True, capture_output: bool = True
+) -> subprocess.CompletedProcess:
     """
     Run a git command and return the result.
 
@@ -30,11 +29,7 @@ def run_git(args: List[str], cwd: Optional[Path] = None, check: bool = True,
     """
     try:
         result = subprocess.run(
-            ["git"] + args,
-            cwd=cwd,
-            capture_output=capture_output,
-            text=True,
-            check=False
+            ["git"] + args, cwd=cwd, capture_output=capture_output, text=True, check=False
         )
 
         if check and result.returncode != 0:
@@ -121,16 +116,15 @@ def get_status_short(path: Optional[Path] = None) -> str:
 
 def branch_exists(branch: str, path: Optional[Path] = None) -> bool:
     """Check if a branch exists locally."""
-    result = run_git(["rev-parse", "--verify", f"refs/heads/{branch}"],
-                     cwd=path, check=False)
+    result = run_git(["rev-parse", "--verify", f"refs/heads/{branch}"], cwd=path, check=False)
     return result.returncode == 0
 
 
-def remote_branch_exists(branch: str, remote: str = "origin",
-                        path: Optional[Path] = None) -> bool:
+def remote_branch_exists(branch: str, remote: str = "origin", path: Optional[Path] = None) -> bool:
     """Check if a branch exists on remote."""
-    result = run_git(["rev-parse", "--verify", f"refs/remotes/{remote}/{branch}"],
-                     cwd=path, check=False)
+    result = run_git(
+        ["rev-parse", "--verify", f"refs/remotes/{remote}/{branch}"], cwd=path, check=False
+    )
     return result.returncode == 0
 
 
@@ -144,8 +138,12 @@ def create_branch(branch: str, base: str = "HEAD", path: Optional[Path] = None):
     run_git(["branch", branch, base], cwd=path)
 
 
-def set_upstream(branch: str, remote: str = "origin",
-                remote_branch: Optional[str] = None, path: Optional[Path] = None):
+def set_upstream(
+    branch: str,
+    remote: str = "origin",
+    remote_branch: Optional[str] = None,
+    path: Optional[Path] = None,
+):
     """
     Set upstream tracking for a branch.
 
@@ -160,8 +158,12 @@ def set_upstream(branch: str, remote: str = "origin",
     run_git(["branch", f"--set-upstream-to={remote}/{remote_branch}", branch], cwd=path)
 
 
-def configure_push_remote(branch: str, remote: str = "origin",
-                         remote_branch: Optional[str] = None, path: Optional[Path] = None):
+def configure_push_remote(
+    branch: str,
+    remote: str = "origin",
+    remote_branch: Optional[str] = None,
+    path: Optional[Path] = None,
+):
     """
     Configure where a branch should push to, even if remote branch doesn't exist yet.
 
@@ -196,7 +198,7 @@ def list_worktrees(path: Optional[Path] = None) -> List[dict]:
     worktrees = []
     current = {}
 
-    for line in result.stdout.strip().split('\n'):
+    for line in result.stdout.strip().split("\n"):
         if not line:
             if current:
                 worktrees.append(current)
@@ -236,12 +238,14 @@ def worktree_exists(name: str, path: Optional[Path] = None) -> Tuple[bool, Optio
     return False, None
 
 
-def add_worktree(path: Path,
-                 branch: str,
-                 create_branch: bool = False,
-                 base: Optional[str] = None,
-                 detached: bool = False,
-                 repo_path: Optional[Path] = None):
+def add_worktree(
+    path: Path,
+    branch: str,
+    create_branch: bool = False,
+    base: Optional[str] = None,
+    detached: bool = False,
+    repo_path: Optional[Path] = None,
+):
     """
     Create a new worktree.
 
@@ -308,15 +312,13 @@ def get_merge_base(branch1: str, branch2: str, path: Optional[Path] = None) -> s
 
 def is_ancestor(ancestor: str, descendant: str, path: Optional[Path] = None) -> bool:
     """Check if ancestor is an ancestor of descendant (i.e., branch is merged)."""
-    result = run_git(["merge-base", "--is-ancestor", ancestor, descendant],
-                     cwd=path, check=False)
+    result = run_git(["merge-base", "--is-ancestor", ancestor, descendant], cwd=path, check=False)
     return result.returncode == 0
 
 
 def get_upstream_branch(branch: str, path: Optional[Path] = None) -> Optional[str]:
     """Get the upstream tracking branch for a local branch."""
-    result = run_git(["rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"],
-                     cwd=path, check=False)
+    result = run_git(["rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"], cwd=path, check=False)
     if result.returncode == 0:
         return result.stdout.strip()
     return None
@@ -329,14 +331,14 @@ def get_ahead_behind(branch: str, upstream: str, path: Optional[Path] = None) ->
     Returns:
         Tuple of (ahead, behind)
     """
-    result = run_git(["rev-list", "--left-right", "--count", f"{upstream}...{branch}"],
-                     cwd=path)
+    result = run_git(["rev-list", "--left-right", "--count", f"{upstream}...{branch}"], cwd=path)
     behind, ahead = result.stdout.strip().split()
     return int(ahead), int(behind)
 
 
-def diff_trees(tree1: str, tree2: str, path: Optional[Path] = None,
-              stat: bool = False, name_only: bool = False) -> str:
+def diff_trees(
+    tree1: str, tree2: str, path: Optional[Path] = None, stat: bool = False, name_only: bool = False
+) -> str:
     """
     Get diff between two tree-ish objects (commits, branches, etc).
 
@@ -376,7 +378,7 @@ def get_default_branch(path: Optional[Path] = None) -> str:
     result = run_git(["symbolic-ref", "refs/remotes/origin/HEAD"], cwd=path, check=False)
     if result.returncode == 0:
         # Output is like "refs/remotes/origin/main"
-        return result.stdout.strip().split('/')[-1]
+        return result.stdout.strip().split("/")[-1]
 
     # Fallback: check common branch names
     for branch in ["main", "master"]:
@@ -422,7 +424,9 @@ def stash_pop(path: Optional[Path] = None) -> bool:
     return result.returncode == 0
 
 
-def pull_branch(branch: str, path: Optional[Path] = None, remote: str = "origin") -> Tuple[bool, str]:
+def pull_branch(
+    branch: str, path: Optional[Path] = None, remote: str = "origin"
+) -> Tuple[bool, str]:
     """
     Pull changes from remote branch.
 
@@ -440,16 +444,13 @@ def pull_branch(branch: str, path: Optional[Path] = None, remote: str = "origin"
         # Check if it was a fast-forward or already up to date
         if "Already up to date" in result.stdout:
             return True, "already_up_to_date"
-        elif "Fast-forward" in result.stdout:
+        if "Fast-forward" in result.stdout:
             return True, "fast_forward"
-        else:
-            return True, "merged"
-    else:
-        # Check for conflict
-        if "CONFLICT" in result.stdout or "CONFLICT" in result.stderr:
-            return False, "conflict"
-        else:
-            return False, result.stderr.strip()
+        return True, "merged"
+    # Check for conflict
+    if "CONFLICT" in result.stdout or "CONFLICT" in result.stderr:
+        return False, "conflict"
+    return False, result.stderr.strip()
 
 
 def rebase_branch(branch: str, onto: str, path: Optional[Path] = None) -> Tuple[bool, str]:
@@ -470,16 +471,13 @@ def rebase_branch(branch: str, onto: str, path: Optional[Path] = None) -> Tuple[
         # Check if it was already up to date or had commits
         if "is up to date" in result.stdout or "is up to date" in result.stderr:
             return True, "up_to_date"
-        else:
-            return True, "rebased"
-    else:
-        # Check for conflict
-        if "CONFLICT" in result.stdout or "CONFLICT" in result.stderr:
-            # Abort the rebase to leave repo in clean state
-            run_git(["rebase", "--abort"], cwd=path, check=False)
-            return False, "conflict"
-        else:
-            return False, result.stderr.strip()
+        return True, "rebased"
+    # Check for conflict
+    if "CONFLICT" in result.stdout or "CONFLICT" in result.stderr:
+        # Abort the rebase to leave repo in clean state
+        run_git(["rebase", "--abort"], cwd=path, check=False)
+        return False, "conflict"
+    return False, result.stderr.strip()
 
 
 def fetch_remote(remote: str = "origin", path: Optional[Path] = None):

@@ -290,7 +290,9 @@ def _parse_html_endpoint_metrics(
     return data
 
 
-def _compute_duration_seconds(start_dt: Optional[datetime], end_dt: Optional[datetime]) -> Optional[float]:
+def _compute_duration_seconds(
+    start_dt: Optional[datetime], end_dt: Optional[datetime]
+) -> Optional[float]:
     """Compute test duration in seconds from start and end timestamps."""
     if not start_dt or not end_dt:
         return None
@@ -423,7 +425,9 @@ def _metric_direction(metric: str) -> str:
     return "neutral"
 
 
-def _verdict_for(metric: str, base_val: Optional[float], curr_val: Optional[float]) -> Optional[str]:
+def _verdict_for(
+    metric: str, base_val: Optional[float], curr_val: Optional[float]
+) -> Optional[str]:
     """Determine the verdict (better/worse/same) for a metric comparison."""
     if base_val is None or curr_val is None:
         return None
@@ -472,8 +476,7 @@ def _get_comparison_fields(
 
     fields = important_fields[:]
     extra_percentiles = [
-        k for k in (curr_data.keys() | base_data.keys())
-        if k.endswith("%") and k not in fields
+        k for k in (curr_data.keys() | base_data.keys()) if k.endswith("%") and k not in fields
     ]
     fields.extend(sorted(extra_percentiles))
     return fields
@@ -556,10 +559,7 @@ def render_comparison(
     rows = _build_comparison_rows(base_row, curr_row, fields, show_verdict, use_emoji=False)
 
     # Calculate column widths
-    widths = [
-        max(len(headers[i]), *(len(row[i]) for row in rows))
-        for i in range(len(headers))
-    ]
+    widths = [max(len(headers[i]), *(len(row[i]) for row in rows)) for i in range(len(headers))]
 
     # Print header
     header_line = "  ".join(h.ljust(widths[i]) for i, h in enumerate(headers))

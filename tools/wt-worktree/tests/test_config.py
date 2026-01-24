@@ -1,8 +1,8 @@
 """Tests for configuration management."""
 
-import pytest
 from pathlib import Path
 
+import pytest
 from wt.config import Config, ConfigError
 
 

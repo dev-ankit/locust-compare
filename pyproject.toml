@@ -1,0 +1,128 @@
+# Root pyproject.toml for monorepo-level tooling configuration
+[project]
+name = "python-tools-monorepo"
+version = "0.1.0"
+description = "Monorepo containing Python CLI tools"
+requires-python = ">=3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Ruff configuration
+[tool.ruff]
+# Target Python 3.8+ (compatible with all tools in the repo)
+target-version = "py38"
+
+# Include all Python files in the tools directory
+include = ["tools/**/*.py"]
+
+# Line length that works well for most projects
+line-length = 100
+
+[tool.ruff.lint]
+# Enable recommended rules plus additional helpful ones
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "ICN",    # flake8-import-conventions
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+    "ARG",    # flake8-unused-arguments
+    "PTH",    # flake8-use-pathlib
+    "PL",     # pylint
+    "RUF",    # ruff-specific rules
+]
+
+# Disable rules that might be too strict for CLI tools
+ignore = [
+    "PLR0913", # Too many arguments
+    "PLR2004", # Magic value comparison
+    "RET504",  # Unnecessary variable before return
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# Test files can have additional flexibility
+"tests/**/*.py" = [
+    "ARG001",  # Unused function argument (common in fixtures)
+    "PLR2004", # Magic values in tests are fine
+    "S101",    # Use of assert (required for pytest)
+]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
+
+# Respect magic trailing comma
+skip-magic-trailing-comma = false
+
+# Pyright configuration
+[tool.pyright]
+include = ["tools"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+]
+
+# Use basic type checking (not too strict for CLI tools)
+typeCheckingMode = "basic"
+
+# Python version compatibility
+pythonVersion = "3.8"
+pythonPlatform = "All"
+
+# Report settings
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnusedImport = "warning"
+reportUnusedVariable = "warning"
+reportDuplicateImport = "warning"
+reportOptionalMemberAccess = "none"  # Can be noisy with Click
+reportOptionalCall = "none"          # Can be noisy with Click
+
+# Bandit security linter configuration
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+    ".venv",
+    "venv",
+]
+skips = [
+    "B101",  # assert_used - we use asserts in tests
+]
+
+# Interrogate docstring coverage configuration
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-semiprivate = true
+ignore-private = true
+ignore-property-decorators = true
+ignore-module = true
+ignore-nested-functions = true
+ignore-nested-classes = true
+fail-under = 0
+verbose = 1
+quiet = false
+color = true
+generate-badge = "."
+badge-format = "svg"
+exclude = ["tests", "docs"]

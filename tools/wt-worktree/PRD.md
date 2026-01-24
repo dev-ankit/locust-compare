@@ -7,6 +7,7 @@
 ## Stories and Tasks
 
 ### Story 1: Core Infrastructure ✅
+
 **As a developer, I want the basic project structure and core git operations, so that I can build features on top**
 
 - [x] Task 1.1: Set up project structure with pyproject.toml
@@ -16,6 +17,7 @@
 - [x] Task 1.5: Add tests for core modules
 
 ### Story 2: Basic Commands ✅
+
 **As a user, I want to initialize and manage worktrees, so that I can work on multiple features**
 
 - [x] Task 2.1: Implement `wt init` command
@@ -25,6 +27,7 @@
 - [x] Task 2.5: Add tests for basic commands
 
 ### Story 3: Worktree Management Commands ✅
+
 **As a user, I want to compare, delete, and check status of worktrees**
 
 - [x] Task 3.1: Implement `wt diff` command
@@ -33,6 +36,7 @@
 - [x] Task 3.4: Add tests for management commands
 
 ### Story 4: Advanced Features ✅
+
 **As a user, I want to run commands in worktrees and clean up merged branches**
 
 - [x] Task 4.1: Implement `wt run` command
@@ -41,6 +45,7 @@
 - [x] Task 4.4: Add tests for advanced features
 
 ### Story 5: Shell Integration ✅
+
 **As a user, I want seamless shell integration, so that I can navigate worktrees easily**
 
 - [x] Task 5.1: Implement `wt shell-init` command
@@ -50,6 +55,7 @@
 - [x] Task 5.5: Test shell integration
 
 ### Story 6: User Experience ✅
+
 **As a user, I want helpful prompts and error messages**
 
 - [x] Task 6.1: Implement user prompts module (prompts.py)
@@ -58,6 +64,7 @@
 - [x] Task 6.4: Handle edge cases (spaces in paths, special characters)
 
 ### Story 7: Documentation and Testing ✅
+
 **As a developer, I want comprehensive documentation and tests**
 
 - [x] Task 7.1: Write comprehensive test suite
@@ -84,6 +91,7 @@
 - Shell wrappers for cd integration
 
 ### Story 8: Worktree Sync ✅
+
 **As a user, I want to sync worktrees with their upstream branches**
 
 - [x] Task 8.1: Add git operations for stash, pull, and rebase

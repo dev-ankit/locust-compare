@@ -1,9 +1,10 @@
 """Integration tests for load_html_feature_map function."""
-import pytest
+
 import sys
 import tempfile
-import shutil
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from compare_runs import load_html_feature_map
@@ -68,7 +69,9 @@ class TestLoadHtmlFeatureMap:
 
             # Create the wrapper file
             wrapper = base / "htmlpublisher-wrapper.html"
-            wrapper.write_text("""<script>window.templateArgs = {"requests_statistics": [{"name": "test", "num_requests": 1}]};</script>""")
+            wrapper.write_text(
+                """<script>window.templateArgs = {"requests_statistics": [{"name": "test", "num_requests": 1}]};</script>"""
+            )
 
             features = load_html_feature_map(base)
             assert "htmlpublisher-wrapper" not in features

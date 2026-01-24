@@ -1,16 +1,19 @@
 """CLI commands for config-utils."""
 
-import os
-import sys
-import yaml
-import subprocess
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
-from typing import Dict, Any, Set, Tuple
+from typing import Any, Dict
+
 import click
+import yaml
 
 
-def flatten_dict(data: Dict[str, Any], depth: int, parent_key: str = '', sep: str = '.') -> Dict[str, Any]:
+def flatten_dict(
+    data: Dict[str, Any], depth: int, parent_key: str = "", sep: str = "."
+) -> Dict[str, Any]:
     """
     Flatten a nested dictionary to a specified depth.
 
@@ -48,7 +51,7 @@ def flatten_dict(data: Dict[str, Any], depth: int, parent_key: str = '', sep: st
     return items
 
 
-def unflatten_dict(data: Dict[str, Any], sep: str = '.') -> Dict[str, Any]:
+def unflatten_dict(data: Dict[str, Any], sep: str = ".") -> Dict[str, Any]:
     """
     Unflatten a dictionary with dot-separated keys back to nested structure.
 
@@ -89,7 +92,7 @@ def load_yaml_file(file_path: str) -> Dict[str, Any]:
         SystemExit: If file not found or invalid YAML
     """
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f) or {}
 
         if not isinstance(data, dict):
@@ -117,12 +120,11 @@ def make_hashable(value: Any) -> Any:
     """
     if isinstance(value, dict):
         return tuple(sorted((k, make_hashable(v)) for k, v in value.items()))
-    elif isinstance(value, list):
+    if isinstance(value, list):
         return tuple(make_hashable(item) for item in value)
-    elif isinstance(value, set):
+    if isinstance(value, set):
         return frozenset(make_hashable(item) for item in value)
-    else:
-        return value
+    return value
 
 
 def perform_set_operation(
@@ -130,7 +132,7 @@ def perform_set_operation(
     file2_data: Dict[str, Any],
     operation: str,
     compare_mode: str,
-    depth: int
+    depth: int,
 ) -> Dict[str, Any]:
     """
     Perform set operations on two dictionaries.
@@ -149,20 +151,20 @@ def perform_set_operation(
     flat1 = flatten_dict(file1_data, depth)
     flat2 = flatten_dict(file2_data, depth)
 
-    if compare_mode == 'keys':
+    if compare_mode == "keys":
         # Compare only keys
         keys1 = set(flat1.keys())
         keys2 = set(flat2.keys())
 
-        if operation == 'union':
+        if operation == "union":
             result_keys = keys1 | keys2
-        elif operation == 'intersect':
+        elif operation == "intersect":
             result_keys = keys1 & keys2
-        elif operation == 'diff':
+        elif operation == "diff":
             result_keys = keys1 - keys2
-        elif operation == 'rdiff':
+        elif operation == "rdiff":
             result_keys = keys2 - keys1
-        elif operation == 'symdiff':
+        elif operation == "symdiff":
             result_keys = keys1 ^ keys2
         else:
             result_keys = set()
@@ -181,7 +183,7 @@ def perform_set_operation(
         items1 = set((k, make_hashable(v)) for k, v in flat1.items())
         items2 = set((k, make_hashable(v)) for k, v in flat2.items())
 
-        if operation == 'union':
+        if operation == "union":
             # For union, we need to handle conflicts - file1 takes precedence
             result_items = items1 | items2
             result = {}
@@ -191,16 +193,16 @@ def perform_set_operation(
                     result[key] = flat1[key]
                 else:
                     result[key] = flat2[key]
-        elif operation == 'intersect':
+        elif operation == "intersect":
             result_items = items1 & items2
             result = {k: flat1[k] for k, _ in result_items}
-        elif operation == 'diff':
+        elif operation == "diff":
             result_items = items1 - items2
             result = {k: flat1[k] for k, _ in result_items}
-        elif operation == 'rdiff':
+        elif operation == "rdiff":
             result_items = items2 - items1
             result = {k: flat2[k] for k, _ in result_items}
-        elif operation == 'symdiff':
+        elif operation == "symdiff":
             result_items = items1 ^ items2
             result = {}
             for key, _ in result_items:
@@ -224,23 +226,22 @@ def perform_set_operation(
 @click.version_option()
 def main():
     """config-utils: Capture environment variables, Django settings, and perform YAML set operations."""
-    pass
 
 
 @main.command()
 @click.option(
-    '--output',
-    '-o',
-    default='env_config.yaml',
-    help='Output file path (default: env_config.yaml)',
+    "--output",
+    "-o",
+    default="env_config.yaml",
+    help="Output file path (default: env_config.yaml)",
     type=click.Path(),
 )
 @click.option(
-    '--format',
-    '-f',
-    type=click.Choice(['yaml', 'yml'], case_sensitive=False),
-    default='yaml',
-    help='Output format (default: yaml)',
+    "--format",
+    "-f",
+    type=click.Choice(["yaml", "yml"], case_sensitive=False),
+    default="yaml",
+    help="Output format (default: yaml)",
 )
 def capture_env(output, format):
     """Capture all environment variables and store them in YAML format."""
@@ -252,43 +253,43 @@ def capture_env(output, format):
         output_path = Path(output)
 
         # Write to YAML file
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             yaml.dump(env_vars, f, default_flow_style=False, sort_keys=True)
 
         click.echo(f"✓ Captured {len(env_vars)} environment variables to {output_path}")
 
     except Exception as e:
-        click.echo(f"✗ Error: {str(e)}", err=True)
+        click.echo(f"✗ Error: {e!s}", err=True)
         sys.exit(1)
 
 
 @main.command()
 @click.option(
-    '--output',
-    '-o',
-    default='django_settings.yaml',
-    help='Output file path (default: django_settings.yaml)',
+    "--output",
+    "-o",
+    default="django_settings.yaml",
+    help="Output file path (default: django_settings.yaml)",
     type=click.Path(),
 )
 @click.option(
-    '--format',
-    '-f',
-    type=click.Choice(['yaml', 'yml'], case_sensitive=False),
-    default='yaml',
-    help='Output format (default: yaml)',
+    "--format",
+    "-f",
+    type=click.Choice(["yaml", "yml"], case_sensitive=False),
+    default="yaml",
+    help="Output format (default: yaml)",
 )
 @click.option(
-    '--manage-py',
-    '-m',
-    default='manage.py',
-    help='Path to manage.py (default: manage.py)',
+    "--manage-py",
+    "-m",
+    default="manage.py",
+    help="Path to manage.py (default: manage.py)",
     type=click.Path(exists=True),
 )
 @click.option(
-    '--settings',
-    '-s',
-    help='Django settings module (e.g., myproject.settings)',
-    envvar='DJANGO_SETTINGS_MODULE',
+    "--settings",
+    "-s",
+    help="Django settings module (e.g., myproject.settings)",
+    envvar="DJANGO_SETTINGS_MODULE",
 )
 def capture_django_settings(output, format, manage_py, settings):
     """Capture Django settings and store them in YAML format.
@@ -303,7 +304,7 @@ def capture_django_settings(output, format, manage_py, settings):
             click.echo(
                 f"✗ Error: manage.py not found at {manage_path}. "
                 "Run this command from your Django project root or use --manage-py to specify the path.",
-                err=True
+                err=True,
             )
             sys.exit(1)
 
@@ -330,20 +331,21 @@ print(json.dumps(settings_dict))
         # Prepare environment variables
         env = os.environ.copy()
         if settings:
-            env['DJANGO_SETTINGS_MODULE'] = settings
+            env["DJANGO_SETTINGS_MODULE"] = settings
 
         # Run manage.py shell with the script
         result = subprocess.run(
-            ['python', str(manage_path), 'shell'],
+            ["python", str(manage_path), "shell"],
             input=django_script,
             capture_output=True,
             text=True,
             env=env,
-            timeout=30
+            timeout=30,
+            check=False,
         )
 
         if result.returncode != 0:
-            click.echo(f"✗ Error running Django shell:", err=True)
+            click.echo("✗ Error running Django shell:", err=True)
             click.echo(result.stderr, err=True)
             sys.exit(1)
 
@@ -351,7 +353,7 @@ print(json.dumps(settings_dict))
         try:
             settings_dict = json.loads(result.stdout.strip())
         except json.JSONDecodeError:
-            click.echo(f"✗ Error: Could not parse Django settings output", err=True)
+            click.echo("✗ Error: Could not parse Django settings output", err=True)
             click.echo(f"Output: {result.stdout}", err=True)
             sys.exit(1)
 
@@ -359,7 +361,7 @@ print(json.dumps(settings_dict))
         output_path = Path(output)
 
         # Write to YAML file
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             yaml.dump(settings_dict, f, default_flow_style=False, sort_keys=True)
 
         click.echo(f"✓ Captured {len(settings_dict)} Django settings to {output_path}")
@@ -368,27 +370,28 @@ print(json.dumps(settings_dict))
         click.echo("✗ Error: Django shell command timed out", err=True)
         sys.exit(1)
     except Exception as e:
-        click.echo(f"✗ Error: {str(e)}", err=True)
+        click.echo(f"✗ Error: {e!s}", err=True)
         sys.exit(1)
 
 
 # Set operation commands
 def create_set_operation_command(operation: str, description: str):
     """Factory function to create set operation commands."""
+
     @main.command(name=operation, help=description)
-    @click.argument('file1', type=click.Path(exists=True))
-    @click.argument('file2', type=click.Path(exists=True))
+    @click.argument("file1", type=click.Path(exists=True))
+    @click.argument("file2", type=click.Path(exists=True))
     @click.option(
-        '--compare',
-        type=click.Choice(['keys', 'kv'], case_sensitive=False),
-        default='kv',
-        help='Comparison mode: keys or kv (key-values). Default: kv',
+        "--compare",
+        type=click.Choice(["keys", "kv"], case_sensitive=False),
+        default="kv",
+        help="Comparison mode: keys or kv (key-values). Default: kv",
     )
     @click.option(
-        '--depth',
+        "--depth",
         type=int,
         default=1,
-        help='How many levels deep to compare. 1 = root keys only, 0 = unlimited (full depth). Default: 1',
+        help="How many levels deep to compare. 1 = root keys only, 0 = unlimited (full depth). Default: 1",
     )
     def command(file1, file2, compare, depth):
         try:
@@ -400,10 +403,12 @@ def create_set_operation_command(operation: str, description: str):
             result = perform_set_operation(file1_data, file2_data, operation, compare, depth)
 
             # Output result as YAML to stdout
-            yaml.dump(result, sys.stdout, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            yaml.dump(
+                result, sys.stdout, default_flow_style=False, sort_keys=False, allow_unicode=True
+            )
 
         except Exception as e:
-            click.echo(f"Error: {str(e)}", err=True)
+            click.echo(f"Error: {e!s}", err=True)
             sys.exit(1)
 
     return command
@@ -411,30 +416,26 @@ def create_set_operation_command(operation: str, description: str):
 
 # Create all set operation commands
 union_cmd = create_set_operation_command(
-    'union',
-    'Returns all keys (or key-value pairs) present in either file.'
+    "union", "Returns all keys (or key-value pairs) present in either file."
 )
 
 intersect_cmd = create_set_operation_command(
-    'intersect',
-    'Returns only keys (or key-value pairs) present in both files.'
+    "intersect", "Returns only keys (or key-value pairs) present in both files."
 )
 
 diff_cmd = create_set_operation_command(
-    'diff',
-    'Returns keys (or key-value pairs) in file1 but not in file2 (A - B).'
+    "diff", "Returns keys (or key-value pairs) in file1 but not in file2 (A - B)."
 )
 
 rdiff_cmd = create_set_operation_command(
-    'rdiff',
-    'Returns keys (or key-value pairs) in file2 but not in file1 (B - A).'
+    "rdiff", "Returns keys (or key-value pairs) in file2 but not in file1 (B - A)."
 )
 
 symdiff_cmd = create_set_operation_command(
-    'symdiff',
-    'Returns keys (or key-value pairs) in either file but not in both (symmetric difference).'
+    "symdiff",
+    "Returns keys (or key-value pairs) in either file but not in both (symmetric difference).",
 )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

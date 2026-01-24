@@ -10,11 +10,12 @@ If you need to create more tasks do it in inside PRD.md and under a story where 
 
 Add appropirate test for your work. try not to use mocks unless necessary
 
-Mark a task done in PRD after the task is completed and tests are passing 
+Mark a task done in PRD after the task is completed and tests are passing
 
 Build/update README.md at the end if the story is finished
 
 Your final commit should include just that folder and selected items from its contents:
+
 - The notes.md, PRD.md and README.md files
 - Any code you wrote along the way
 - If you checked out and modified an existing repo, the output of "git diff" against that modified repo saved as a file - but not a copy of the full repo
@@ -26,12 +27,14 @@ After everything is done update the root README.md with the tool's information
 ## Running Tests
 
 **First time setup:**
+
 ```bash
 cd tools/<tool-name>
 uv pip install -e ".[dev]"  # Install with dev dependencies
 ```
 
 **Run tests:**
+
 ```bash
 uv run pytest tests/ -v              # Verbose output
 uv run pytest tests/ -v --cov=<pkg>  # With coverage (if configured in pyproject.toml)
@@ -49,5 +52,3 @@ uv run pytest tests/test_foo.py::test_bar -v  # Run specific test
 5. **Document learnings**: Add to notes.md as you discover gotchas or solutions
 6. **Test as you go**: Run tests after each significant change, not just at the end
 7. **Git config in tests**: Disable GPG signing in test fixtures: `git config commit.gpgsign false`
-
-

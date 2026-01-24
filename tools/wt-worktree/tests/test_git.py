@@ -1,8 +1,5 @@
 """Tests for git operations."""
 
-import pytest
-from pathlib import Path
-
 from wt import git
 
 
@@ -75,6 +72,7 @@ def test_add_worktree(git_repo, temp_dir):
 
     worktrees = git.list_worktrees(git_repo)
     assert len(worktrees) == 2
+
 
 def test_add_worktree_with_existing_branch(git_repo, temp_dir):
     """Test adding a worktree with an existing branch."""

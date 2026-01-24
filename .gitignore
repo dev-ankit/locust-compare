@@ -204,6 +204,12 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# Pre-commit cache
+.pre-commit-cache/
+
+# Interrogate badge
+interrogate_badge.svg
+
 # PyPI configuration file
 .pypirc
 

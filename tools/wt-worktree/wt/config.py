@@ -3,7 +3,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 # Try tomllib (Python 3.11+), fallback to tomli
 if sys.version_info >= (3, 11):
@@ -17,7 +17,6 @@ else:
 
 class ConfigError(Exception):
     """Raised when configuration operations fail."""
-    pass
 
 
 class Config:
@@ -51,8 +50,7 @@ class Config:
         """Read a TOML file."""
         if tomllib is None:
             raise ConfigError(
-                "TOML support not available. "
-                "Please install tomli: pip install tomli"
+                "TOML support not available. " "Please install tomli: pip install tomli"
             )
 
         try:
@@ -86,8 +84,9 @@ class Config:
         config_data = config if config is not None else self._config
 
         # Filter out None values
-        filtered = {k: v for k, v in config_data.items()
-                   if v is not None and k in self.DEFAULT_CONFIG}
+        filtered = {
+            k: v for k, v in config_data.items() if v is not None and k in self.DEFAULT_CONFIG
+        }
 
         self._write_toml(config_path, filtered)
 
@@ -99,16 +98,16 @@ class Config:
             if isinstance(value, str):
                 lines.append(f'{key} = "{value}"')
             elif isinstance(value, bool):
-                lines.append(f'{key} = {str(value).lower()}')
+                lines.append(f"{key} = {str(value).lower()}")
             elif isinstance(value, (int, float)):
-                lines.append(f'{key} = {value}')
+                lines.append(f"{key} = {value}")
             elif value is None:
-                lines.append(f'# {key} = null')
+                lines.append(f"# {key} = null")
 
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, "w") as f:
-                f.write('\n'.join(lines) + '\n')
+                f.write("\n".join(lines) + "\n")
         except Exception as e:
             raise ConfigError(f"Failed to write config to {path}: {e}")
 
@@ -179,5 +178,5 @@ class Config:
         """
         prefix = self.get("prefix")
         if prefix and branch.startswith(f"{prefix}/"):
-            return branch[len(prefix) + 1:]
+            return branch[len(prefix) + 1 :]
         return branch

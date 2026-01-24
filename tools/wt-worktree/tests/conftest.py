@@ -6,7 +6,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from wt import git
 
 
@@ -43,7 +42,7 @@ def git_repo(temp_dir):
     if current_branch == "master":
         git.run_git(["branch", "-m", "main"], cwd=repo_path)
 
-    yield repo_path
+    return repo_path
 
 
 @pytest.fixture
@@ -59,7 +58,7 @@ def git_repo_with_remote(git_repo, temp_dir):
     # Push main branch
     git.run_git(["push", "-u", "origin", "main"], cwd=git_repo)
 
-    yield git_repo, remote_path
+    return git_repo, remote_path
 
 
 @pytest.fixture
