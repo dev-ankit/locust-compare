@@ -442,3 +442,91 @@ def test_detached_worktree_backward_compatibility(runner, initialized_repo, no_p
     # Should be able to find it by inferred name
     found_wt = manager.find_worktree_by_name("legacy")
     assert found_wt is not None
+
+
+# --- checkout branch (switch -c -B) tests ---
+
+
+def test_switch_checkout_branch(runner, initialized_repo, no_prompt):
+    """Test wt switch -c -B with existing branch."""
+    git.create_branch("fix/login-bug", "HEAD", initialized_repo)
+
+    result = runner.invoke(cli, ["switch", "-c", "-B", "fix/login-bug"])
+    assert result.exit_code == 0
+    assert "fix/login-bug" in result.output
+    assert "login-bug" in result.output
+
+
+def test_switch_checkout_branch_custom_name(runner, initialized_repo, no_prompt):
+    """Test wt switch -c <name> -B <branch>."""
+    git.create_branch("fix/login-bug", "HEAD", initialized_repo)
+
+    result = runner.invoke(cli, ["switch", "-c", "review", "-B", "fix/login-bug"])
+    assert result.exit_code == 0
+    assert "review" in result.output
+
+
+def test_switch_checkout_branch_nonexistent(runner, initialized_repo):
+    """Test wt switch -c -B with nonexistent branch."""
+    result = runner.invoke(cli, ["switch", "-c", "-B", "nonexistent/branch"])
+    assert result.exit_code == 3  # EXIT_GIT_ERROR
+    assert "does not exist" in result.output
+
+
+def test_switch_checkout_branch_requires_create(runner, initialized_repo):
+    """Test that -B requires -c flag."""
+    result = runner.invoke(cli, ["switch", "-B", "fix/login-bug"])
+    assert result.exit_code == 2
+    assert "requires" in result.output
+
+
+def test_switch_checkout_branch_no_detached(runner, initialized_repo):
+    """Test that -B cannot be used with -d."""
+    result = runner.invoke(cli, ["switch", "-c", "-B", "fix/login-bug", "-d"])
+    assert result.exit_code == 2
+    assert "cannot be used" in result.output.lower()
+
+
+def test_switch_checkout_branch_no_base(runner, initialized_repo):
+    """Test that -B cannot be used with -b."""
+    result = runner.invoke(cli, ["switch", "-c", "-B", "fix/login-bug", "-b", "main"])
+    assert result.exit_code == 2
+    assert "cannot be used" in result.output.lower()
+
+
+def test_switch_checkout_branch_shell_helper(runner, initialized_repo, no_prompt):
+    """Test wt switch -c -B with --shell-helper."""
+    git.create_branch("fix/login-bug", "HEAD", initialized_repo)
+
+    result = runner.invoke(cli, ["switch", "-c", "-B", "fix/login-bug", "--shell-helper"])
+    assert result.exit_code == 0
+    # Output should be just the path
+    output = result.output.strip()
+    assert "/" in output
+
+
+def test_switch_checkout_then_switch(runner, initialized_repo, no_prompt):
+    """Test that wt switch works after checkout."""
+    git.create_branch("fix/login-bug", "HEAD", initialized_repo)
+    runner.invoke(cli, ["switch", "-c", "-B", "fix/login-bug"])
+
+    # Should be able to switch to it by derived name
+    result = runner.invoke(cli, ["switch", "login-bug"])
+    assert result.exit_code == 0
+
+
+def test_switch_checkout_then_delete(runner, initialized_repo, no_prompt):
+    """Test that wt delete works after checkout."""
+    git.create_branch("fix/login-bug", "HEAD", initialized_repo)
+    runner.invoke(cli, ["switch", "-c", "-B", "fix/login-bug"])
+
+    # Should be able to delete by derived name
+    result = runner.invoke(cli, ["delete", "login-bug", "--force", "--keep-branch"])
+    assert result.exit_code == 0
+
+
+def test_switch_checkout_fetch_requires_branch(runner, initialized_repo):
+    """Test that --fetch requires -B."""
+    result = runner.invoke(cli, ["switch", "-c", "feat", "--fetch"])
+    assert result.exit_code == 2
+    assert "requires" in result.output
