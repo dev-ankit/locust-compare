@@ -87,15 +87,66 @@ def init(ctx: Context, prefix: str, path_pattern: str):
 @click.argument("name", required=False)
 @click.option("-c", "--create", is_flag=True, help="Create worktree if it doesn't exist")
 @click.option("-b", "--base", help="Base branch for new worktree")
+@click.option("-B", "--branch", "checkout_branch", default=None,
+              help="Checkout an existing branch into a new worktree (use with -c)")
+@click.option("-f", "--fetch", is_flag=True, help="Fetch branch from remote before checkout")
 @click.option("-d", "--detached", is_flag=True, help="Create in detached HEAD state")
 @click.option("--shell-helper", is_flag=True, hidden=True,
               help="Internal flag for shell integration")
 @pass_context
 def switch(ctx: Context, name: Optional[str], create: bool, base: Optional[str],
-          detached: bool, shell_helper: bool):
-    """Switch to a worktree, optionally creating it."""
+          checkout_branch: Optional[str], fetch: bool, detached: bool, shell_helper: bool):
+    """Switch to a worktree, optionally creating it.
+
+    Use -B/--branch to checkout an existing branch into a new worktree:
+
+    \b
+        wt switch -c -B fix/login-bug
+        wt switch -c review -B fix/login-bug
+        wt switch -c -B fix/login-bug --fetch
+    """
     if not ctx.repo_root or not ctx.manager:
         error("Not in a git repository.", EXIT_GIT_ERROR)
+        return
+
+    # Validate flag combinations
+    if checkout_branch and not create:
+        error("--branch/-B requires --create/-c", EXIT_INVALID_ARGS)
+        return
+
+    if checkout_branch and detached:
+        error("--branch/-B cannot be used with --detached/-d", EXIT_INVALID_ARGS)
+        return
+
+    if checkout_branch and base:
+        error("--branch/-B cannot be used with --base/-b", EXIT_INVALID_ARGS)
+        return
+
+    if fetch and not checkout_branch:
+        error("--fetch/-f requires --branch/-B", EXIT_INVALID_ARGS)
+        return
+
+    # Handle checkout of existing branch
+    if checkout_branch:
+        from .worktree import WorktreeManager
+
+        try:
+            wt_path = ctx.manager.checkout_branch(checkout_branch, name, fetch)
+            display_name = name if name else WorktreeManager._derive_name_from_branch(checkout_branch)
+
+            # Record current worktree as previous
+            current_wt = ctx.manager.get_current_worktree()
+            if current_wt:
+                ctx.previous_worktree_file.write_text(str(current_wt["path"]))
+
+            if shell_helper:
+                print(wt_path)
+            else:
+                success(f"Checked out '{checkout_branch}' into worktree '{display_name}'")
+                info(f"Run: cd {wt_path}")
+
+        except git.GitError as e:
+            error(str(e), EXIT_GIT_ERROR)
         return
 
     # Handle special names

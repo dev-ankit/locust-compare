@@ -493,6 +493,21 @@ def fetch_remote(remote: str = "origin", path: Optional[Path] = None):
     run_git(["fetch", remote], cwd=path)
 
 
+def fetch_branch(branch: str, remote: str = "origin", path: Optional[Path] = None):
+    """
+    Fetch a specific branch from remote.
+
+    Args:
+        branch: Branch name to fetch
+        remote: Remote name
+        path: Repository path
+
+    Raises:
+        GitError: If fetch fails
+    """
+    run_git(["fetch", remote, branch], cwd=path)
+
+
 def enable_worktree_config(path: Path):
     """
     Enable worktree-specific config support.

@@ -183,3 +183,93 @@ def test_find_by_full_branch_name(manager):
     assert wt1 is not None
     assert wt2 is not None
     assert wt1["path"] == wt2["path"]
+
+
+# --- checkout_branch tests ---
+
+
+def test_derive_name_from_branch():
+    """Test name derivation from branch names."""
+    derive = WorktreeManager._derive_name_from_branch
+    assert derive("fix/login-bug") == "login-bug"
+    assert derive("feature/add-auth") == "add-auth"
+    assert derive("origin/feature/pr-123") == "pr-123"
+    assert derive("main") == "main"
+    assert derive("claude/some-branch") == "some-branch"
+    assert derive("origin/main") == "main"
+    assert derive("a/b/c") == "c"
+
+
+def test_checkout_branch(manager, git_repo):
+    """Test checking out an existing branch into a new worktree."""
+    git.create_branch("fix/login-bug", "HEAD", git_repo)
+
+    wt_path = manager.checkout_branch("fix/login-bug")
+
+    assert wt_path.exists()
+    wt = manager.find_worktree_by_name("login-bug")
+    assert wt is not None
+    assert wt["branch"] == "fix/login-bug"
+
+
+def test_checkout_branch_custom_name(manager, git_repo):
+    """Test checkout with a custom worktree name."""
+    git.create_branch("fix/login-bug", "HEAD", git_repo)
+
+    wt_path = manager.checkout_branch("fix/login-bug", name="review-login")
+
+    assert wt_path.exists()
+    wt = manager.find_worktree_by_name("review-login")
+    assert wt is not None
+    assert wt["branch"] == "fix/login-bug"
+
+
+def test_checkout_nonexistent_branch(manager, git_repo):
+    """Test checkout of a branch that doesn't exist."""
+    with pytest.raises(git.GitError, match="does not exist"):
+        manager.checkout_branch("nonexistent/branch")
+
+
+def test_checkout_branch_already_has_worktree(manager, git_repo):
+    """Test checkout of a branch that already has a worktree."""
+    git.create_branch("fix/login-bug", "HEAD", git_repo)
+    manager.checkout_branch("fix/login-bug")
+
+    with pytest.raises(git.GitError, match="already has a worktree"):
+        manager.checkout_branch("fix/login-bug")
+
+
+def test_checkout_branch_findable_by_derived_name(manager, git_repo):
+    """Test that checked-out worktree is findable by its derived name."""
+    git.create_branch("claude/my-feature", "HEAD", git_repo)
+    manager.checkout_branch("claude/my-feature")
+
+    # Should be findable by derived name
+    wt = manager.find_worktree_by_name("my-feature")
+    assert wt is not None
+
+    # Should also be findable by full branch name
+    wt2 = manager.find_worktree_by_name("claude/my-feature")
+    assert wt2 is not None
+    assert wt["path"] == wt2["path"]
+
+
+def test_checkout_branch_appears_in_list(manager, git_repo):
+    """Test that checked-out worktree appears in list with correct name."""
+    git.create_branch("fix/login-bug", "HEAD", git_repo)
+    manager.checkout_branch("fix/login-bug")
+
+    worktrees = manager.list_worktrees()
+    names = [wt["name"] for wt in worktrees]
+    assert "login-bug" in names
+
+
+def test_checkout_branch_name_conflict(manager, git_repo):
+    """Test checkout when derived name conflicts with existing path."""
+    git.create_branch("fix/bug", "HEAD", git_repo)
+    git.create_branch("hotfix/bug", "HEAD", git_repo)
+
+    manager.checkout_branch("fix/bug")
+
+    with pytest.raises(git.GitError, match="already exists"):
+        manager.checkout_branch("hotfix/bug")

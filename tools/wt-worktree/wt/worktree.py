@@ -67,9 +67,14 @@ class WorktreeManager:
             except git.GitError:
                 wt["message"] = ""
 
-            # Extract worktree name from branch or config
+            # Extract worktree name from stored config, branch, or other sources
             if wt.get("branch"):
-                wt["name"] = self.config.extract_worktree_name(wt["branch"])
+                # Check for stored name first (used by checkout_branch)
+                stored_name = git.get_worktree_name(wt["path"])
+                if stored_name:
+                    wt["name"] = stored_name
+                else:
+                    wt["name"] = self.config.extract_worktree_name(wt["branch"])
             else:
                 # For detached worktrees, try multiple sources
                 stored_name = git.get_worktree_name(wt["path"])
@@ -243,6 +248,110 @@ class WorktreeManager:
                 pass
 
         return wt_path
+
+    def checkout_branch(self, branch: str, name: Optional[str] = None,
+                        fetch: bool = False) -> Path:
+        """
+        Checkout an existing branch into a new worktree.
+
+        Unlike create_worktree(), this uses the branch name as-is (no prefix).
+
+        Args:
+            branch: Full branch name (e.g., 'fix/login-bug', 'claude/some-branch')
+            name: Optional custom worktree name. If None, derived from branch.
+            fetch: Fetch from remote before checking out.
+
+        Returns:
+            Path to created worktree
+
+        Raises:
+            git.GitError: If checkout fails
+        """
+        # Derive worktree name if not provided
+        if name is None:
+            name = self._derive_name_from_branch(branch)
+
+        # Optionally fetch from remote
+        if fetch:
+            try:
+                git.fetch_branch(branch, "origin", self.repo_root)
+            except git.GitError:
+                pass
+
+        # Validate branch exists (locally or as a remote tracking branch)
+        local_exists = git.branch_exists(branch, self.repo_root)
+        remote_exists = git.remote_branch_exists(branch, "origin", self.repo_root)
+
+        if not local_exists and not remote_exists:
+            raise git.GitError(
+                f"Branch '{branch}' does not exist locally or on remote.\n"
+                f"Use '--fetch' to fetch from remote first, or check the branch name."
+            )
+
+        # Check if branch already has a worktree
+        exists, existing_path = git.worktree_exists(branch, self.repo_root)
+        if exists:
+            raise git.GitError(
+                f"Branch '{branch}' already has a worktree at {existing_path}\n"
+                f"Use 'wt switch {name}' to switch to it."
+            )
+
+        # Compute worktree path
+        wt_path = self.config.resolve_path_pattern(name, branch)
+
+        if wt_path.exists():
+            raise git.GitError(
+                f"Path {wt_path} already exists. "
+                f"Please remove it or use --name to choose a different name."
+            )
+
+        # Create worktree using existing branch
+        try:
+            git.add_worktree(wt_path, branch, create_branch=False,
+                             repo_path=self.repo_root)
+        except git.GitError as e:
+            raise git.GitError(f"Failed to create worktree: {e}")
+
+        # Store worktree name so list_worktrees() can find it by derived name
+        git.set_worktree_name(name, wt_path)
+
+        # Set upstream tracking if remote exists
+        if remote_exists:
+            try:
+                git.set_upstream(branch, "origin", branch, self.repo_root)
+            except git.GitError:
+                try:
+                    git.configure_push_remote(branch, "origin", branch, wt_path)
+                except git.GitError:
+                    pass
+        else:
+            try:
+                git.configure_push_remote(branch, "origin", branch, wt_path)
+            except git.GitError:
+                pass
+
+        return wt_path
+
+    @staticmethod
+    def _derive_name_from_branch(branch: str) -> str:
+        """
+        Derive a worktree name from a branch name.
+
+        Takes the last path component of the branch name.
+
+        Examples:
+            fix/login-bug       -> login-bug
+            feature/add-auth    -> add-auth
+            origin/feature/pr   -> pr
+            main                -> main
+        """
+        clean = branch
+        if clean.startswith("origin/"):
+            clean = clean[len("origin/"):]
+
+        if "/" in clean:
+            return clean.rsplit("/", 1)[1]
+        return clean
 
     def delete_worktree(self, name: str, force: bool = False,
                        keep_branch: bool = False) -> bool:
